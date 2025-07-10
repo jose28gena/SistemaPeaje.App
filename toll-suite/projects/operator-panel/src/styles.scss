@@ -1,0 +1,44 @@
+/* You can add global styles to this file, and also import other style files */
+
+html, body { height: 100%; }
+body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+
+/* Custom styles for toll system */
+.toll-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.status-active {
+  color: #4caf50 !important;
+}
+
+.status-inactive {
+  color: #f44336 !important;
+}
+
+.status-maintenance {
+  color: #ff9800 !important;
+}
+
+.metric-card {
+  text-align: center;
+  padding: 20px;
+}
+
+.quick-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+
+/* Material Design customizations */
+.mat-mdc-card {
+  margin-bottom: 16px;
+}
+
+.full-width {
+  width: 100%;
+}
