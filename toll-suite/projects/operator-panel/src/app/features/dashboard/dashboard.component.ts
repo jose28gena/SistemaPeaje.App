@@ -134,11 +134,8 @@ import { Component, OnInit } from '@angular/core';
     }
   `]
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent {
 
   constructor() { }
-
-  ngOnInit(): void {
-  }
 
 }
