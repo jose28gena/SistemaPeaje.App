@@ -1,0 +1,1289 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Peaje - Interfaz Operador</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+        }
+
+        .operator-layout {
+            display: grid;
+            grid-template-columns: 1fr;
+            grid-template-rows: 
+                clamp(60px, 5vh, 80px) 
+                1fr 
+                clamp(120px, 15vh, 160px) 
+                clamp(40px, 4vh, 60px);
+            grid-template-areas: 
+                "header"
+                "main"
+                "sidebar"
+                "footer";
+            height: 100vh;
+            width: 100vw;
+            min-height: 600px;
+        }
+
+        /* Header */
+        .header-toolbar {
+            grid-area: header;
+            background: #1976d2;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 clamp(16px, 2vw, 32px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            font-size: clamp(14px, 1.2vw, 18px);
+        }
+
+        .header-section {
+            display: flex;
+            align-items: center;
+            gap: clamp(12px, 1.5vw, 24px);
+            flex: 1;
+        }
+
+        .logo {
+            width: clamp(32px, 3vw, 48px);
+            height: clamp(32px, 3vw, 48px);
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #1976d2;
+            font-weight: bold;
+            font-size: clamp(12px, 1.2vw, 16px);
+        }
+
+        .booth-info {
+            font-weight: 500;
+            font-size: clamp(12px, 1.1vw, 16px);
+        }
+
+        .header-center {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+        }
+
+        .clock {
+            font-family: 'Courier New', monospace;
+            font-size: clamp(16px, 1.8vw, 24px);
+            font-weight: bold;
+            background: rgba(255,255,255,0.1);
+            padding: 8px 16px;
+            border-radius: 4px;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: clamp(8px, 1vw, 16px);
+            flex: 1;
+            justify-content: flex-end;
+        }
+
+        .operator-name {
+            font-size: clamp(12px, 1.1vw, 16px);
+        }
+
+        .logout-btn {
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: white;
+            padding: clamp(6px, 0.8vw, 12px) clamp(12px, 1.2vw, 20px);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: clamp(11px, 1vw, 14px);
+            transition: background 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        /* Main Content */
+        .main-content {
+            grid-area: main;
+            display: grid;
+            grid-template-columns: 
+                minmax(600px, 2fr) 
+                minmax(350px, 1fr);
+            gap: clamp(12px, 1.2vw, 24px);
+            padding: clamp(12px, 1.2vw, 24px);
+            overflow: hidden;
+            height: 100%;
+            max-height: calc(100vh - 280px); /* Adjust based on header+sidebar+footer */
+        }
+
+        .panel-card {
+            background: white;
+            border-radius: clamp(6px, 0.8vw, 12px);
+            padding: clamp(12px, 1.5vw, 24px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .panel-title {
+            font-size: clamp(16px, 1.4vw, 20px);
+            font-weight: 600;
+            margin-bottom: clamp(12px, 1.2vw, 20px);
+            color: #333;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: clamp(6px, 0.8vw, 12px);
+            flex-shrink: 0;
+        }
+
+        /* Vehicle Panel */
+        .vehicle-panel {
+            display: flex;
+            flex-direction: column;
+            min-height: 0; /* Important for flex overflow */
+        }
+
+        .vehicle-panel .panel-card {
+            overflow-y: auto;
+        }
+
+        .camera-section {
+            margin-bottom: clamp(12px, 1.2vw, 20px);
+            flex-shrink: 0;
+        }
+
+        .camera-feed {
+            height: clamp(150px, 18vh, 250px);
+            background: #000;
+            border-radius: clamp(6px, 0.8vw, 12px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: clamp(12px, 1.1vw, 16px);
+        }
+
+        .camera-placeholder {
+            text-align: center;
+        }
+
+        .camera-icon {
+            font-size: clamp(32px, 4vw, 64px);
+            margin-bottom: clamp(6px, 0.8vw, 12px);
+            display: block;
+        }
+
+        .ocr-section {
+            background: #e3f2fd;
+            padding: clamp(10px, 1.2vw, 16px);
+            border-radius: clamp(6px, 0.8vw, 12px);
+            margin-bottom: clamp(12px, 1.2vw, 20px);
+            flex-shrink: 0;
+        }
+
+        .ocr-result {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: clamp(6px, 0.8vw, 12px);
+            font-size: clamp(12px, 1.1vw, 16px);
+        }
+
+        .label {
+            font-weight: 500;
+            color: #666;
+        }
+
+        .value {
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+        }
+
+        .confidence {
+            font-size: clamp(10px, 1vw, 14px);
+            color: #666;
+        }
+
+        .classification-section {
+            margin-bottom: clamp(12px, 1.2vw, 20px);
+            flex-shrink: 0;
+        }
+
+        .suggested-class {
+            margin-bottom: clamp(10px, 1vw, 16px);
+        }
+
+        .class-chip {
+            background: #2196f3;
+            color: white;
+            padding: clamp(3px, 0.5vw, 6px) clamp(8px, 1vw, 16px);
+            border-radius: clamp(12px, 1.2vw, 20px);
+            display: inline-block;
+            font-size: clamp(10px, 1vw, 14px);
+        }
+
+        .vehicle-details {
+            display: flex;
+            gap: clamp(12px, 1.5vw, 24px);
+            font-size: clamp(11px, 1vw, 15px);
+            color: #666;
+            margin-bottom: clamp(12px, 1.2vw, 20px);
+            flex-wrap: wrap;
+        }
+
+        .validation-actions {
+            display: flex;
+            gap: clamp(8px, 1vw, 16px);
+            margin-bottom: clamp(12px, 1.2vw, 20px);
+            flex-shrink: 0;
+        }
+
+        .btn {
+            padding: clamp(6px, 0.8vw, 12px) clamp(12px, 1.2vw, 20px);
+            border: none;
+            border-radius: clamp(3px, 0.5vw, 6px);
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            font-size: clamp(11px, 1vw, 15px);
+            flex: 1;
+        }
+
+        .btn-primary {
+            background: #2196f3;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1976d2;
+        }
+
+        .btn-accent {
+            background: #ff9800;
+            color: white;
+        }
+
+        .btn-accent:hover {
+            background: #f57c00;
+        }
+
+        .class-buttons {
+            margin-bottom: clamp(12px, 1.2vw, 20px);
+            flex-shrink: 0;
+        }
+
+        .class-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(clamp(120px, 15vw, 180px), 1fr));
+            gap: clamp(6px, 0.8vw, 12px);
+        }
+
+        .class-button {
+            height: clamp(35px, 4vh, 50px);
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: clamp(3px, 0.5vw, 6px);
+            cursor: pointer;
+            font-size: clamp(10px, 0.9vw, 13px);
+            transition: all 0.3s ease;
+            padding: clamp(4px, 0.5vw, 8px);
+        }
+
+        .class-button:hover {
+            background: #e0e0e0;
+            transform: translateY(-1px);
+        }
+
+        .class-button.selected {
+            background: #2196f3;
+            color: white;
+            border-color: #2196f3;
+            box-shadow: 0 2px 4px rgba(33, 150, 243, 0.3);
+        }
+
+        .axles-control {
+            display: flex;
+            align-items: center;
+            gap: clamp(8px, 1vw, 16px);
+            justify-content: center;
+            padding: clamp(10px, 1.2vw, 16px);
+            background: #f9f9f9;
+            border-radius: clamp(6px, 0.8vw, 12px);
+            flex-shrink: 0;
+        }
+
+        .axle-btn {
+            width: clamp(28px, 3vw, 40px);
+            height: clamp(28px, 3vw, 40px);
+            border: none;
+            border-radius: 50%;
+            background: #2196f3;
+            color: white;
+            cursor: pointer;
+            font-size: clamp(14px, 1.4vw, 20px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .axle-btn:hover {
+            background: #1976d2;
+            transform: scale(1.1);
+        }
+
+        .axle-count {
+            font-weight: 500;
+            min-width: clamp(50px, 6vw, 80px);
+            text-align: center;
+            font-size: clamp(12px, 1.1vw, 16px);
+        }
+
+        .undo-btn {
+            background: #ff9800;
+            margin-left: auto;
+        }
+
+        .undo-btn:hover {
+            background: #f57c00;
+        }
+
+        /* Payment Panel */
+        .payment-panel {
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .payment-panel .panel-card {
+            overflow-y: auto;
+        }
+
+        .rate-section {
+            background: #f3e5f5;
+            padding: clamp(12px, 1.5vw, 20px);
+            border-radius: clamp(6px, 0.8vw, 12px);
+            margin-bottom: clamp(12px, 1.2vw, 20px);
+            flex-shrink: 0;
+        }
+
+        .rate-line {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: clamp(6px, 0.8vw, 12px);
+            font-size: clamp(12px, 1.1vw, 16px);
+        }
+
+        .rate-line.total {
+            font-weight: bold;
+            font-size: clamp(14px, 1.3vw, 18px);
+            margin-top: clamp(6px, 0.8vw, 12px);
+            border-top: 1px solid #ddd;
+            padding-top: clamp(6px, 0.8vw, 12px);
+        }
+
+        .total .value {
+            color: #2e7d32;
+        }
+
+        .payment-methods {
+            margin-bottom: clamp(12px, 1.2vw, 20px);
+            flex-shrink: 0;
+        }
+
+        .payment-methods h4 {
+            margin: 0 0 clamp(8px, 1vw, 16px) 0;
+            font-size: clamp(12px, 1.1vw, 16px);
+            font-weight: 500;
+        }
+
+        .payment-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(clamp(140px, 18vw, 200px), 1fr));
+            gap: clamp(6px, 0.8vw, 12px);
+            margin-bottom: clamp(12px, 1.2vw, 20px);
+        }
+
+        .payment-button {
+            height: clamp(45px, 5vh, 65px);
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: clamp(3px, 0.5vw, 6px);
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            font-size: clamp(10px, 1vw, 14px);
+        }
+
+        .payment-button:hover {
+            background: #e0e0e0;
+            transform: translateY(-1px);
+        }
+
+        .payment-button.selected {
+            background: #2196f3;
+            color: white;
+            border-color: #2196f3;
+            box-shadow: 0 2px 4px rgba(33, 150, 243, 0.3);
+        }
+
+        .hotkey {
+            font-size: clamp(8px, 0.8vw, 11px);
+            opacity: 0.7;
+        }
+
+        .payment-details {
+            margin-bottom: clamp(12px, 1.2vw, 20px);
+            flex-shrink: 0;
+        }
+
+        .amount-field {
+            width: 100%;
+            padding: clamp(8px, 1vw, 14px) clamp(10px, 1.2vw, 16px);
+            border: 1px solid #ddd;
+            border-radius: clamp(3px, 0.5vw, 6px);
+            font-size: clamp(12px, 1.1vw, 16px);
+            box-sizing: border-box;
+        }
+
+        .change-amount {
+            display: flex;
+            justify-content: space-between;
+            padding: clamp(6px, 0.8vw, 12px) 0;
+            font-weight: 500;
+            font-size: clamp(12px, 1.1vw, 16px);
+        }
+
+        .change-amount .value.negative {
+            color: #d32f2f;
+        }
+
+        .process-button {
+            width: 100%;
+            height: clamp(45px, 5vh, 70px);
+            background: #4caf50;
+            color: white;
+            border: none;
+            border-radius: clamp(3px, 0.5vw, 6px);
+            font-size: clamp(14px, 1.3vw, 18px);
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: auto;
+            transition: all 0.3s ease;
+        }
+
+        .process-button:hover:not(:disabled) {
+            background: #388e3c;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
+        }
+
+        .process-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Incidents Sidebar */
+        .incidents-sidebar {
+            grid-area: sidebar;
+            padding: 0 clamp(12px, 1.2vw, 24px);
+        }
+
+        .incidents-sidebar .panel-card {
+            padding: clamp(10px, 1.2vw, 18px);
+        }
+
+        .incidents-sidebar .panel-title {
+            font-size: clamp(14px, 1.2vw, 18px);
+            margin-bottom: clamp(10px, 1vw, 16px);
+        }
+
+        .alert-item {
+            display: flex;
+            align-items: center;
+            gap: clamp(6px, 0.8vw, 12px);
+            padding: clamp(4px, 0.6vw, 8px) 0;
+            font-size: clamp(11px, 1vw, 14px);
+        }
+
+        .alert-icon {
+            width: clamp(14px, 1.5vw, 20px);
+            height: clamp(14px, 1.5vw, 20px);
+            flex-shrink: 0;
+        }
+
+        .warn { color: #ff9800; }
+        .info { color: #2196f3; }
+
+        .incident-button {
+            width: 100%;
+            margin-top: clamp(8px, 1vw, 16px);
+            background: #ff9800;
+            color: white;
+            border: none;
+            padding: clamp(6px, 0.8vw, 12px);
+            border-radius: clamp(3px, 0.5vw, 6px);
+            cursor: pointer;
+            font-size: clamp(10px, 0.9vw, 13px);
+            transition: all 0.3s ease;
+        }
+
+        .incident-button:hover {
+            background: #f57c00;
+            transform: translateY(-1px);
+        }
+
+        .shift-stats {
+            margin-top: clamp(12px, 1.2vw, 20px);
+        }
+
+        .shift-stats h4 {
+            margin: 0 0 clamp(8px, 1vw, 14px) 0;
+            font-size: clamp(12px, 1.1vw, 16px);
+            font-weight: 500;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: clamp(3px, 0.5vw, 6px) 0;
+            font-size: clamp(10px, 1vw, 14px);
+        }
+
+        .stat-item .value {
+            font-weight: 500;
+        }
+
+        /* Footer Status Bar */
+        .footer-status {
+            grid-area: footer;
+            background: #263238;
+            color: white;
+            padding: clamp(6px, 0.8vw, 12px) clamp(12px, 1.2vw, 24px);
+        }
+
+        .status-indicators {
+            display: flex;
+            gap: clamp(16px, 2vw, 32px);
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: clamp(3px, 0.5vw, 6px);
+            font-size: clamp(10px, 1vw, 14px);
+            padding: clamp(4px, 0.6vw, 8px) clamp(8px, 1vw, 12px);
+            border-radius: clamp(3px, 0.5vw, 6px);
+            background: rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .status-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .status-icon {
+            width: clamp(12px, 1.2vw, 18px);
+            height: clamp(12px, 1.2vw, 18px);
+        }
+
+        .online { 
+            color: #4caf50;
+            box-shadow: 0 0 8px rgba(76, 175, 80, 0.3);
+        }
+        .warning { 
+            color: #ff9800;
+            box-shadow: 0 0 8px rgba(255, 152, 0, 0.3);
+        }
+        .offline { 
+            color: #f44336;
+            box-shadow: 0 0 8px rgba(244, 67, 54, 0.3);
+        }
+
+        /* Responsive Design for Different Monitor Sizes */
+        
+        /* Ultra-wide monitors (21:9 and 32:9) */
+        @media (min-aspect-ratio: 21/9) {
+            .main-content {
+                grid-template-columns: 
+                    minmax(700px, 2.5fr) 
+                    minmax(400px, 1fr);
+                gap: clamp(20px, 2vw, 40px);
+            }
+            
+            .class-grid {
+                grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            }
+            
+            .payment-buttons {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        /* Large desktop monitors (1440p, 4K) */
+        @media (min-width: 2560px) {
+            .operator-layout {
+                grid-template-rows: 
+                    clamp(70px, 5vh, 100px) 
+                    1fr 
+                    clamp(140px, 12vh, 180px) 
+                    clamp(50px, 4vh, 70px);
+            }
+            
+            .main-content {
+                padding: clamp(20px, 2vw, 40px);
+            }
+            
+            .panel-card {
+                padding: clamp(20px, 2vw, 32px);
+            }
+        }
+
+        /* Standard desktop monitors (1080p, 1440p) */
+        @media (min-width: 1920px) and (max-width: 2559px) {
+            .class-grid {
+                grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            }
+        }
+
+        /* Smaller desktop monitors (1366x768, 1600x900) */
+        @media (max-width: 1599px) {
+            .main-content {
+                grid-template-columns: 
+                    minmax(500px, 2fr) 
+                    minmax(300px, 1fr);
+                gap: clamp(8px, 1vw, 16px);
+            }
+            
+            .class-grid {
+                grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            }
+            
+            .payment-buttons {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .vehicle-details {
+                flex-direction: column;
+                gap: clamp(6px, 0.8vw, 12px);
+            }
+        }
+
+        /* Tablet landscape and small desktop */
+        @media (max-width: 1279px) {
+            .operator-layout {
+                grid-template-areas: 
+                    "header"
+                    "main"
+                    "sidebar"
+                    "footer";
+            }
+            
+            .main-content {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto;
+                gap: clamp(12px, 1.5vw, 20px);
+                overflow-y: auto;
+                max-height: none;
+            }
+            
+            .vehicle-panel, .payment-panel {
+                min-height: 300px;
+            }
+            
+            .class-grid {
+                grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+            }
+            
+            .payment-buttons {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        /* Mobile and very small screens */
+        @media (max-width: 767px) {
+            .header-section .booth-info {
+                display: none;
+            }
+            
+            .header-center .clock {
+                font-size: clamp(14px, 4vw, 18px);
+            }
+            
+            .class-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .payment-buttons {
+                grid-template-columns: 1fr;
+            }
+            
+            .vehicle-details {
+                font-size: clamp(10px, 3vw, 12px);
+            }
+            
+            .status-indicators {
+                gap: clamp(8px, 2vw, 16px);
+                flex-wrap: wrap;
+            }
+        }
+
+        /* High DPI displays */
+        @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+            .panel-card {
+                box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+            }
+            
+            .btn, .class-button, .payment-button {
+                border-width: 0.5px;
+            }
+        }
+
+        /* Portrait orientation handling */
+        @media (orientation: portrait) and (max-width: 1024px) {
+            .operator-layout {
+                grid-template-rows: auto auto 1fr auto;
+                grid-template-areas: 
+                    "header"
+                    "sidebar"
+                    "main"
+                    "footer";
+            }
+            
+            .incidents-sidebar {
+                padding: clamp(8px, 1vw, 16px);
+            }
+            
+            .incidents-sidebar .panel-card {
+                padding: clamp(8px, 1vw, 14px);
+            }
+        }
+
+        /* Animation and transition improvements for different screen sizes */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        /* Focus improvements for different input methods */
+        @media (hover: hover) {
+            .btn:hover, .class-button:hover, .payment-button:hover {
+                transform: translateY(-1px);
+            }
+        }
+
+        @media (hover: none) {
+            .btn:active, .class-button:active, .payment-button:active {
+                transform: scale(0.98);
+            }
+        }
+
+        /* Print styles */
+        @media print {
+            .operator-layout {
+                grid-template-areas: 
+                    "header"
+                    "main"
+                    "sidebar";
+            }
+            
+            .footer-status {
+                display: none;
+            }
+            
+            .camera-feed {
+                background: #f0f0f0;
+                color: #333;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="operator-layout">
+        <!-- Header (12x1) -->
+        <div class="header-toolbar">
+            <div class="header-section">
+                <div class="logo">SP</div>
+                <span class="booth-info">Caseta 01 - Carril 02</span>
+            </div>
+            <div class="header-center">
+                <span class="clock" id="clock">--:--:--</span>
+            </div>
+            <div class="header-actions">
+                <span class="operator-name">Juan Pérez</span>
+                <button class="logout-btn" onclick="logout()">Cerrar Sesión</button>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="main-content">
+            <!-- Vehicle Panel (8 columns) -->
+            <div class="vehicle-panel">
+                <div class="panel-card">
+                    <div class="panel-title">Panel Vehículo</div>
+                    
+                    <!-- Live Camera Feed -->
+                    <div class="camera-section">
+                        <div class="camera-feed">
+                            <div class="camera-placeholder">
+                                <span class="camera-icon">📹</span>
+                                <span>Cámara en vivo</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- OCR/LPR Results -->
+                    <div class="ocr-section">
+                        <div class="ocr-result">
+                            <span class="label">Placa detectada:</span>
+                            <span class="value" id="detectedPlate">ABC-123</span>
+                        </div>
+                        <div class="confidence">
+                            <span>Confianza: <span id="ocrConfidence">95</span>%</span>
+                        </div>
+                    </div>
+
+                    <!-- Vehicle Classification -->
+                    <div class="classification-section">
+                        <div class="suggested-class">
+                            <span class="label">Clase sugerida:</span>
+                            <span class="class-chip" id="suggestedClass">Auto</span>
+                        </div>
+                        <div class="vehicle-details">
+                            <span>Ejes: <span id="axlesCount">2</span></span>
+                            <span>Velocidad: <span id="speed">45</span> km/h</span>
+                            <span>Peso: <span id="weight">2500</span> kg</span>
+                        </div>
+                    </div>
+
+                    <!-- Validation Actions -->
+                    <div class="validation-actions">
+                        <button class="btn btn-primary" onclick="validateClass()">
+                            ✓ Validar
+                        </button>
+                        <button class="btn btn-accent" onclick="correctClass()">
+                            ✎ Corregir
+                        </button>
+                    </div>
+
+                    <!-- Class Selection Buttons -->
+                    <div class="class-buttons">
+                        <div class="class-grid">
+                            <button class="class-button selected" onclick="selectClass(this, 'Auto', 25.00, 4.00)">Auto</button>
+                            <button class="class-button" onclick="selectClass(this, 'Motocicleta', 15.00, 2.40)">Motocicleta</button>
+                            <button class="class-button" onclick="selectClass(this, 'Camión 2 ejes', 45.00, 7.20)">Camión 2 ejes</button>
+                            <button class="class-button" onclick="selectClass(this, 'Camión 3 ejes', 65.00, 10.40)">Camión 3 ejes</button>
+                            <button class="class-button" onclick="selectClass(this, 'Tráiler', 85.00, 13.60)">Tráiler</button>
+                            <button class="class-button" onclick="selectClass(this, 'Autobús', 55.00, 8.80)">Autobús</button>
+                        </div>
+                    </div>
+
+                    <!-- Axles Control -->
+                    <div class="axles-control">
+                        <button class="axle-btn" onclick="addAxle()" title="+1 Eje">+</button>
+                        <span class="axle-count"><span id="axleDisplay">2</span> ejes</span>
+                        <button class="axle-btn" onclick="removeAxle()" title="-1 Eje">-</button>
+                        <button class="axle-btn undo-btn" onclick="undo()" title="Deshacer">↶</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Panel (4 columns) -->
+            <div class="payment-panel">
+                <div class="panel-card">
+                    <div class="panel-title">Panel de Cobro</div>
+                    
+                    <!-- Rate Information -->
+                    <div class="rate-section">
+                        <div class="rate-line">
+                            <span class="label">Clase:</span>
+                            <span class="value" id="selectedClassName">Auto</span>
+                        </div>
+                        <div class="rate-line">
+                            <span class="label">Tarifa base:</span>
+                            <span class="value">$<span id="baseRate">25.00</span></span>
+                        </div>
+                        <div class="rate-line">
+                            <span class="label">IVA:</span>
+                            <span class="value">$<span id="taxAmount">4.00</span></span>
+                        </div>
+                        <div class="rate-line total">
+                            <span class="label">Total:</span>
+                            <span class="value">$<span id="totalAmount">29.00</span></span>
+                        </div>
+                    </div>
+
+                    <!-- Payment Methods -->
+                    <div class="payment-methods">
+                        <h4>Método de pago:</h4>
+                        <div class="payment-buttons">
+                            <button class="payment-button" onclick="selectPaymentMethod(this, 'cash')" data-hotkey="F1">
+                                <span class="hotkey">[F1]</span>
+                                <span>Efectivo</span>
+                            </button>
+                            <button class="payment-button" onclick="selectPaymentMethod(this, 'rfid')" data-hotkey="F2">
+                                <span class="hotkey">[F2]</span>
+                                <span>RFID</span>
+                            </button>
+                            <button class="payment-button" onclick="selectPaymentMethod(this, 'qr')" data-hotkey="F3">
+                                <span class="hotkey">[F3]</span>
+                                <span>QR</span>
+                            </button>
+                            <button class="payment-button" onclick="selectPaymentMethod(this, 'exempt')" data-hotkey="F4">
+                                <span class="hotkey">[F4]</span>
+                                <span>Exento</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Payment Details -->
+                    <div class="payment-details" id="paymentDetails" style="display: none;">
+                        <input type="number" class="amount-field" id="receivedAmount" 
+                               placeholder="Importe recibido" step="0.01" 
+                               oninput="calculateChange()" />
+                        <div class="change-amount" id="changeDisplay" style="display: none;">
+                            <span class="label">Cambio:</span>
+                            <span class="value" id="changeAmount">$0.00</span>
+                        </div>
+                    </div>
+
+                    <!-- Process Button -->
+                    <button class="process-button" id="processBtn" onclick="processPayment()" disabled>
+                        💳 PROCESAR
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Incidents Sidebar (12x3) -->
+        <div class="incidents-sidebar">
+            <div class="panel-card">
+                <div class="panel-title">⚠️ Incidencias</div>
+                
+                <div class="alerts-section">
+                    <div class="alert-item">
+                        <span class="alert-icon warn">⚠️</span>
+                        <span>Sensor de peso desactivado</span>
+                    </div>
+                    <div class="alert-item">
+                        <span class="alert-icon info">ℹ️</span>
+                        <span>Evasión detectada en carril 3</span>
+                    </div>
+                    <button class="incident-button" onclick="registerIncident()">
+                        ➕ [Ctrl + I] Registrar Incidencia
+                    </button>
+                </div>
+                
+                <div class="shift-stats">
+                    <h4>Estadísticas del Turno</h4>
+                    <div class="stat-item">
+                        <span class="label">Total procesados:</span>
+                        <span class="value" id="totalProcessed">156</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="label">Fallos:</span>
+                        <span class="value" id="errorCount">3</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="label">Tiempo promedio:</span>
+                        <span class="value" id="averageTime">12.5</span>s
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Status Bar (12x1) -->
+        <div class="footer-status">
+            <div class="status-indicators">
+                <div class="status-item online">
+                    <span class="status-icon">📹</span>
+                    <span>Cámara</span>
+                </div>
+                <div class="status-item online">
+                    <span class="status-icon">📶</span>
+                    <span>Red</span>
+                </div>
+                <div class="status-item warning">
+                    <span class="status-icon">🧠</span>
+                    <span>PLC</span>
+                </div>
+                <div class="status-item online">
+                    <span class="status-icon">🔄</span>
+                    <span>Lazo</span>
+                </div>
+                <div class="status-item online">
+                    <span class="status-icon">🔋</span>
+                    <span>UPS</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentClass = { name: 'Auto', rate: 25.00, tax: 4.00 };
+        let currentPaymentMethod = null;
+        let axlesCount = 2;
+
+        // Update clock
+        function updateClock() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('es-ES', { hour12: false });
+            document.getElementById('clock').textContent = timeString;
+        }
+
+        // Initialize clock and update every second
+        updateClock();
+        setInterval(updateClock, 1000);
+
+        // Class selection
+        function selectClass(button, name, rate, tax) {
+            // Remove selected class from all buttons
+            document.querySelectorAll('.class-button').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            
+            // Add selected class to clicked button
+            button.classList.add('selected');
+            
+            // Update current class
+            currentClass = { name, rate, tax };
+            
+            // Update display
+            document.getElementById('selectedClassName').textContent = name;
+            document.getElementById('baseRate').textContent = rate.toFixed(2);
+            document.getElementById('taxAmount').textContent = tax.toFixed(2);
+            document.getElementById('totalAmount').textContent = (rate + tax).toFixed(2);
+            
+            updateProcessButton();
+        }
+
+        // Axles control
+        function addAxle() {
+            axlesCount++;
+            document.getElementById('axleDisplay').textContent = axlesCount;
+            document.getElementById('axlesCount').textContent = axlesCount;
+        }
+
+        function removeAxle() {
+            if (axlesCount > 1) {
+                axlesCount--;
+                document.getElementById('axleDisplay').textContent = axlesCount;
+                document.getElementById('axlesCount').textContent = axlesCount;
+            }
+        }
+
+        function undo() {
+            console.log('Deshaciendo última acción...');
+        }
+
+        // Validation actions
+        function validateClass() {
+            console.log('Clase validada:', currentClass);
+        }
+
+        function correctClass() {
+            console.log('Corrigiendo clase...');
+        }
+
+        // Payment method selection
+        function selectPaymentMethod(button, method) {
+            // Remove selected class from all payment buttons
+            document.querySelectorAll('.payment-button').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            
+            // Add selected class to clicked button
+            button.classList.add('selected');
+            currentPaymentMethod = method;
+            
+            // Show/hide payment details for cash
+            const paymentDetails = document.getElementById('paymentDetails');
+            if (method === 'cash') {
+                paymentDetails.style.display = 'block';
+            } else {
+                paymentDetails.style.display = 'none';
+                document.getElementById('changeDisplay').style.display = 'none';
+            }
+            
+            updateProcessButton();
+        }
+
+        // Calculate change for cash payments
+        function calculateChange() {
+            const receivedAmount = parseFloat(document.getElementById('receivedAmount').value) || 0;
+            const totalAmount = currentClass.rate + currentClass.tax;
+            const change = receivedAmount - totalAmount;
+            
+            const changeDisplay = document.getElementById('changeDisplay');
+            const changeAmount = document.getElementById('changeAmount');
+            
+            if (receivedAmount > 0) {
+                changeDisplay.style.display = 'flex';
+                changeAmount.textContent = '$' + change.toFixed(2);
+                changeAmount.className = 'value' + (change < 0 ? ' negative' : '');
+            } else {
+                changeDisplay.style.display = 'none';
+            }
+            
+            updateProcessButton();
+        }
+
+        // Update process button state
+        function updateProcessButton() {
+            const processBtn = document.getElementById('processBtn');
+            let canProcess = currentPaymentMethod !== null;
+            
+            if (currentPaymentMethod === 'cash') {
+                const receivedAmount = parseFloat(document.getElementById('receivedAmount').value) || 0;
+                const totalAmount = currentClass.rate + currentClass.tax;
+                canProcess = receivedAmount >= totalAmount;
+            }
+            
+            processBtn.disabled = !canProcess;
+        }
+
+        // Process payment
+        function processPayment() {
+            const totalAmount = currentClass.rate + currentClass.tax;
+            const receivedAmount = currentPaymentMethod === 'cash' 
+                ? parseFloat(document.getElementById('receivedAmount').value) 
+                : totalAmount;
+            const change = receivedAmount - totalAmount;
+            
+            console.log('Procesando pago...', {
+                class: currentClass,
+                method: currentPaymentMethod,
+                total: totalAmount,
+                received: receivedAmount,
+                change: change
+            });
+            
+            alert(`Pago procesado exitosamente!\nClase: ${currentClass.name}\nMétodo: ${currentPaymentMethod}\nTotal: $${totalAmount.toFixed(2)}`);
+            
+            // Reset for next vehicle
+            resetTransaction();
+        }
+
+        // Reset transaction
+        function resetTransaction() {
+            // Reset payment method
+            document.querySelectorAll('.payment-button').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            currentPaymentMethod = null;
+            
+            // Reset payment details
+            document.getElementById('paymentDetails').style.display = 'none';
+            document.getElementById('receivedAmount').value = '';
+            document.getElementById('changeDisplay').style.display = 'none';
+            
+            updateProcessButton();
+        }
+
+        // Incidents and other functions
+        function registerIncident() {
+            console.log('Registrando incidencia...');
+            alert('Función de registro de incidencias');
+        }
+
+        function closeShift() {
+            console.log('Cerrando turno...');
+            alert('Función de cierre de turno');
+        }
+
+        function logout() {
+            console.log('Cerrando sesión...');
+            if (confirm('¿Está seguro que desea cerrar sesión?')) {
+                alert('Sesión cerrada');
+            }
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(event) {
+            if (event.ctrlKey) {
+                switch (event.key.toLowerCase()) {
+                    case 'i':
+                        event.preventDefault();
+                        registerIncident();
+                        break;
+                    case 't':
+                        event.preventDefault();
+                        closeShift();
+                        break;
+                }
+            } else {
+                switch (event.key) {
+                    case 'F1':
+                        event.preventDefault();
+                        document.querySelector('[data-hotkey="F1"]').click();
+                        break;
+                    case 'F2':
+                        event.preventDefault();
+                        document.querySelector('[data-hotkey="F2"]').click();
+                        break;
+                    case 'F3':
+                        event.preventDefault();
+                        document.querySelector('[data-hotkey="F3"]').click();
+                        break;
+                    case 'F4':
+                        event.preventDefault();
+                        document.querySelector('[data-hotkey="F4"]').click();
+                        break;
+                }
+            }
+        });
+
+        // Simulate live data updates
+        function simulateDataUpdates() {
+            // Simulate new vehicle detection
+            setTimeout(() => {
+                const plates = ['XYZ-789', 'DEF-456', 'GHI-123', 'JKL-987'];
+                const randomPlate = plates[Math.floor(Math.random() * plates.length)];
+                document.getElementById('detectedPlate').textContent = randomPlate;
+                
+                const confidence = Math.floor(Math.random() * 30) + 70; // 70-99%
+                document.getElementById('ocrConfidence').textContent = confidence;
+                
+                const speed = Math.floor(Math.random() * 40) + 30; // 30-70 km/h
+                document.getElementById('speed').textContent = speed;
+                
+                const weight = Math.floor(Math.random() * 3000) + 1500; // 1500-4500 kg
+                document.getElementById('weight').textContent = weight;
+            }, 5000);
+        }
+
+        // Start simulation
+        simulateDataUpdates();
+        setInterval(simulateDataUpdates, 10000); // Update every 10 seconds
+    </script>
+</body>
+</html>

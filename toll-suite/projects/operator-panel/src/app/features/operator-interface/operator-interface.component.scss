@@ -1,0 +1,594 @@
+.operator-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: 
+    clamp(60px, 5vh, 80px) 
+    1fr 
+    clamp(120px, 15vh, 160px) 
+    clamp(40px, 4vh, 60px);
+  grid-template-areas: 
+    "header"
+    "main"
+    "sidebar"
+    "footer";
+  height: 100vh;
+  width: 100vw;
+  min-height: 600px;
+  background-color: #f5f5f5;
+}
+
+/* Header Toolbar (12x1) */
+.header-toolbar {
+  grid-area: header;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 clamp(16px, 2vw, 32px);
+  font-size: clamp(14px, 1.2vw, 18px);
+
+  .header-section {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+
+    .logo {
+      height: 40px;
+    }
+
+    .booth-info {
+      font-weight: 500;
+      font-size: 14px;
+    }
+  }
+
+  .header-center {
+    .clock {
+      font-family: 'Courier New', monospace;
+      font-size: 18px;
+      font-weight: bold;
+    }
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    .operator-name {
+      font-size: 14px;
+    }
+  }
+}
+
+/* Main Content Area */
+.main-content {
+  grid-area: main;
+  display: grid;
+  grid-template-columns: 
+    minmax(600px, 2fr) 
+    minmax(350px, 1fr);
+  gap: clamp(12px, 1.2vw, 24px);
+  padding: clamp(12px, 1.2vw, 24px);
+  overflow: hidden;
+  height: 100%;
+  max-height: calc(100vh - 280px);
+}
+
+/* Vehicle Panel (8 columns) */
+.vehicle-panel {
+  display: flex;
+  flex-direction: column;
+
+  .panel-card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: clamp(12px, 1.5vw, 24px);
+    border-radius: clamp(6px, 0.8vw, 12px);
+
+    mat-card-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+  }
+
+  .camera-section {
+    .camera-feed {
+      height: clamp(150px, 18vh, 250px);
+      background: #000;
+      border-radius: clamp(6px, 0.8vw, 12px);
+      position: relative;
+
+      .camera-placeholder {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: white;
+        text-align: center;
+
+        mat-icon {
+          font-size: 48px;
+          width: 48px;
+          height: 48px;
+          display: block;
+          margin: 0 auto 8px;
+        }
+      }
+    }
+  }
+
+  .ocr-section {
+    background: #e3f2fd;
+    padding: clamp(10px, 1.2vw, 16px);
+    border-radius: clamp(6px, 0.8vw, 12px);
+    margin-bottom: clamp(12px, 1.2vw, 20px);
+
+    .ocr-result {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+
+      .label {
+        font-weight: 500;
+      }
+
+      .value {
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+        font-size: 16px;
+      }
+    }
+
+    .confidence {
+      font-size: 12px;
+      color: #666;
+    }
+  }
+
+  .classification-section {
+    .suggested-class {
+      margin-bottom: 12px;
+
+      .label {
+        font-weight: 500;
+        margin-right: 8px;
+      }
+    }
+
+    .vehicle-details {
+      display: flex;
+      gap: 16px;
+      font-size: 14px;
+      color: #666;
+    }
+  }
+
+  .validation-actions {
+    display: flex;
+    gap: clamp(8px, 1vw, 16px);
+    margin-bottom: clamp(12px, 1.2vw, 20px);
+
+    button {
+      flex: 1;
+      padding: clamp(6px, 0.8vw, 12px) clamp(12px, 1.2vw, 20px);
+      border-radius: clamp(3px, 0.5vw, 6px);
+      font-size: clamp(11px, 1vw, 15px);
+    }
+  }
+
+  .class-buttons {
+    .class-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: clamp(6px, 0.8vw, 12px);
+    }
+
+    .class-button {
+      height: clamp(35px, 4vh, 50px);
+      border-radius: clamp(3px, 0.5vw, 6px);
+      font-size: clamp(10px, 0.9vw, 13px);
+      padding: clamp(4px, 0.5vw, 8px);
+    }
+  }
+
+  .axles-control {
+    display: flex;
+    align-items: center;
+    gap: clamp(8px, 1vw, 16px);
+    justify-content: center;
+    padding: clamp(10px, 1.2vw, 16px);
+    border-radius: clamp(6px, 0.8vw, 12px);
+
+    .axle-btn {
+      width: clamp(28px, 3vw, 40px);
+      height: clamp(28px, 3vw, 40px);
+      font-size: clamp(14px, 1.4vw, 20px);
+    }
+
+    .axle-count {
+      font-size: clamp(12px, 1.1vw, 16px);
+      min-width: clamp(50px, 6vw, 80px);
+    }
+  }
+}
+
+/* Payment Panel (4 columns) */
+.payment-panel {
+  display: flex;
+  flex-direction: column;
+
+  .panel-card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: clamp(12px, 1.5vw, 24px);
+    border-radius: clamp(6px, 0.8vw, 12px);
+
+    mat-card_content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+  }
+
+  .rate-section {
+    background: #f3e5f5;
+    padding: clamp(12px, 1.5vw, 20px);
+    border-radius: clamp(6px, 0.8vw, 12px);
+    margin-bottom: clamp(12px, 1.2vw, 20px);
+
+    .rate-details {
+      .rate-line {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: clamp(6px, 0.8vw, 12px);
+        font-size: clamp(12px, 1.1vw, 16px);
+
+        &.total {
+          font-weight: bold;
+          font-size: clamp(14px, 1.3vw, 18px);
+          margin-top: clamp(6px, 0.8vw, 12px);
+          padding-top: clamp(6px, 0.8vw, 12px);
+
+          .value {
+            color: #2e7d32;
+          }
+        }
+      }
+    }
+  }
+
+  .payment-methods {
+    h4 {
+      margin: 0 0 12px 0;
+      font-size: clamp(12px, 1.1vw, 16px);
+      font-weight: 500;
+    }
+
+    .payment-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: clamp(6px, 0.8vw, 12px);
+      margin-bottom: clamp(12px, 1.2vw, 20px);
+    }
+
+    .payment-button {
+      height: clamp(45px, 5vh, 65px);
+      border-radius: clamp(3px, 0.5vw, 6px);
+      font-size: clamp(10px, 1vw, 14px);
+
+      .hotkey {
+        font-size: clamp(8px, 0.8vw, 11px);
+      }
+    }
+  }
+
+  .payment-details {
+    .amount-field {
+      padding: clamp(8px, 1vw, 14px) clamp(10px, 1.2vw, 16px);
+      border-radius: clamp(3px, 0.5vw, 6px);
+      font-size: clamp(12px, 1.1vw, 16px);
+    }
+
+    .change-amount {
+      display: flex;
+      justify-content: space-between;
+      padding: clamp(6px, 0.8vw, 12px) 0;
+      font-weight: 500;
+      font-size: clamp(12px, 1.1vw, 16px);
+    }
+  }
+
+  .process-section {
+    margin-top: auto;
+
+    .process-button {
+      height: clamp(45px, 5vh, 70px);
+      border-radius: clamp(3px, 0.5vw, 6px);
+      font-size: clamp(14px, 1.3vw, 18px);
+    }
+  }
+}
+
+/* Incidents Sidebar (12x3) */
+.incidents-sidebar {
+  grid-area: sidebar;
+  padding: 0 clamp(12px, 1.2vw, 24px);
+
+  .sidebar-card {
+    padding: clamp(10px, 1.2vw, 18px);
+
+    .alerts-section {
+      margin-bottom: 16px;
+
+      .alert-item {
+        display: flex;
+        align-items: center;
+        gap: clamp(6px, 0.8vw, 12px);
+        padding: clamp(4px, 0.6vw, 8px) 0;
+        font-size: clamp(11px, 1vw, 14px);
+
+        mat-icon {
+          font-size: clamp(14px, 1.5vw, 20px);
+          width: clamp(14px, 1.5vw, 20px);
+          height: clamp(14px, 1.5vw, 20px);
+        }
+      }
+
+      .incident-button {
+        width: 100%;
+        margin-top: clamp(8px, 1vw, 16px);
+        padding: clamp(6px, 0.8vw, 12px);
+        border-radius: clamp(3px, 0.5vw, 6px);
+        font-size: clamp(10px, 0.9vw, 13px);
+      }
+    }
+
+    .shift-stats {
+      h4 {
+        margin: clamp(12px, 1.2vw, 20px) 0 clamp(8px, 1vw, 14px) 0;
+        font-size: clamp(12px, 1.1vw, 16px);
+      }
+
+      .stat-item {
+        display: flex;
+        justify-content: space-between;
+        padding: clamp(3px, 0.5vw, 6px) 0;
+        font-size: clamp(10px, 1vw, 14px);
+      }
+    }
+  }
+}
+
+/* Footer Status Bar (12x1) */
+.footer-status {
+  grid-area: footer;
+  background: #263238;
+  color: white;
+  padding: clamp(6px, 0.8vw, 12px) clamp(12px, 1.2vw, 24px);
+
+  .status-indicators {
+    display: flex;
+    gap: clamp(16px, 2vw, 32px);
+    justify-content: center;
+
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: clamp(3px, 0.5vw, 6px);
+      font-size: clamp(10px, 1vw, 14px);
+      padding: clamp(4px, 0.6vw, 8px) clamp(8px, 1vw, 12px);
+      border-radius: clamp(3px, 0.5vw, 6px);
+
+      mat-icon {
+        font-size: clamp(12px, 1.2vw, 18px);
+        width: clamp(12px, 1.2vw, 18px);
+        height: clamp(12px, 1.2vw, 18px);
+      }
+
+      &.online {
+        color: #4caf50;
+      }
+
+      &.warning {
+        color: #ff9800;
+      }
+
+      &.offline {
+        color: #f44336;
+      }
+    }
+  }
+}
+
+/* Responsive adjustments */
+/* Ultra-wide monitors (21:9 and 32:9) */
+@media (min-aspect-ratio: 21/9) {
+  .main-content {
+    grid-template-columns: 
+      minmax(700px, 2.5fr) 
+      minmax(400px, 1fr);
+    gap: clamp(20px, 2vw, 40px);
+  }
+
+  .class-buttons .class-grid {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  }
+
+  .payment-methods .payment-buttons {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Large desktop monitors (1440p, 4K) */
+@media (min-width: 2560px) {
+  .operator-layout {
+    grid-template-rows: 
+      clamp(70px, 5vh, 100px) 
+      1fr 
+      clamp(140px, 12vh, 180px) 
+      clamp(50px, 4vh, 70px);
+  }
+
+  .main-content {
+    padding: clamp(20px, 2vw, 40px);
+  }
+}
+
+/* Standard desktop monitors (1080p, 1440p) */
+@media (min-width: 1920px) and (max-width: 2559px) {
+  .class-buttons .class-grid {
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  }
+}
+
+/* Smaller desktop monitors (1366x768, 1600x900) */
+@media (max-width: 1599px) {
+  .main-content {
+    grid-template-columns: 
+      minmax(500px, 2fr) 
+      minmax(300px, 1fr);
+    gap: clamp(8px, 1vw, 16px);
+  }
+
+  .class-buttons .class-grid {
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  }
+
+  .payment-methods .payment-buttons {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .vehicle-panel .vehicle-details {
+    flex-direction: column;
+    gap: clamp(6px, 0.8vw, 12px);
+  }
+}
+
+/* Tablet landscape and small desktop */
+@media (max-width: 1279px) {
+  .operator-layout {
+    grid-template-areas: 
+      "header"
+      "main"
+      "sidebar"
+      "footer";
+  }
+
+  .main-content {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+    gap: clamp(12px, 1.5vw, 20px);
+    overflow-y: auto;
+    max-height: none;
+  }
+
+  .vehicle-panel, .payment-panel {
+    min-height: 300px;
+  }
+
+  .class-buttons .class-grid {
+    grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  }
+
+  .payment-methods .payment-buttons {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Mobile and very small screens */
+@media (max-width: 767px) {
+  .header-toolbar .header-section .booth-info {
+    display: none;
+  }
+
+  .class-buttons .class-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .payment-methods .payment-buttons {
+    grid-template-columns: 1fr;
+  }
+
+  .vehicle-panel .vehicle-details {
+    font-size: clamp(10px, 3vw, 12px);
+  }
+
+  .footer-status .status-indicators {
+    gap: clamp(8px, 2vw, 16px);
+    flex-wrap: wrap;
+  }
+}
+
+/* High DPI displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .panel-card {
+    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  }
+}
+
+/* Portrait orientation handling */
+@media (orientation: portrait) and (max-width: 1024px) {
+  .operator-layout {
+    grid-template-rows: auto auto 1fr auto;
+    grid-template-areas: 
+      "header"
+      "sidebar"
+      "main"
+      "footer";
+  }
+
+  .incidents-sidebar {
+    padding: clamp(8px, 1vw, 16px);
+  }
+}
+
+/* Animation improvements */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Focus improvements for different input methods */
+@media (hover: hover) {
+  .validation-actions .btn:hover, 
+  .class-button:hover, 
+  .payment-button:hover {
+    transform: translateY(-1px);
+  }
+}
+
+@media (hover: none) {
+  .validation-actions .btn:active, 
+  .class-button:active, 
+  .payment-button:active {
+    transform: scale(0.98);
+  }
+}
+
+/* Animation for state changes */
+.status-item, .alert-item {
+  transition: color 0.3s ease;
+}
+
+.process-button {
+  transition: all 0.3s ease;
+
+  &:disabled {
+    opacity: 0.6;
+  }
+}
+
+/* Focus styles for accessibility */
+button:focus, 
+.mat-mdc-form-field:focus-within {
+  outline: 2px solid #2196f3;
+  outline-offset: 2px;
+}

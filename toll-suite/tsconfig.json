@@ -24,7 +24,9 @@
     ],
     "paths": {
       "@ui-kit": ["libs/ui-kit/src/public-api.ts"],
-      "@data-access": ["libs/data-access/src/public-api.ts"]
+      "@data-access": ["libs/data-access/src/public-api.ts"],
+      "@toll-suite/ui-kit": ["libs/ui-kit/src/public-api.ts"],
+      "@toll-suite/data-access": ["libs/data-access/src/public-api.ts"]
     }
   },
   "angularCompilerOptions": {

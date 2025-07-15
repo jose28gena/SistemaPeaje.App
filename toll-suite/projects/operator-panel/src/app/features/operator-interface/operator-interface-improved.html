@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Peaje - Pantalla del Operador (Mejorada)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+        }
+
+        .operator-interface {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            grid-template-rows: 80px 1fr 100px;
+            grid-template-areas: 
+                "header header"
+                "main receipt"
+                "status status";
+            height: 100vh;
+            gap: 16px;
+            padding: 16px;
+        }
+
+        /* Header */
+        .header {
+            grid-area: header;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 0 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .logo {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .station-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .station-info h2 {
+            font-size: 18px;
+            color: #333;
+            margin: 0;
+        }
+
+        .station-info span {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .header-center {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .current-time {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            font-family: 'Courier New', monospace;
+        }
+
+        .current-date {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .operator-info {
+            text-align: right;
+        }
+
+        .operator-name {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .shift-time {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .logout-btn {
+            background: #ff4757;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: #ff3742;
+            transform: translateY(-1px);
+        }
+
+        /* Main Content */
+        .main-content {
+            grid-area: main;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+        }
+
+        .vehicle-detection {
+            background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .detection-info h3 {
+            margin: 0 0 8px 0;
+            font-size: 18px;
+        }
+
+        .plate-detected {
+            font-family: 'Courier New', monospace;
+            font-size: 24px;
+            font-weight: bold;
+            margin: 8px 0;
+            letter-spacing: 2px;
+        }
+
+        .detection-details {
+            display: flex;
+            gap: 20px;
+            font-size: 14px;
+            margin-top: 8px;
+        }
+
+        .confidence-meter {
+            width: 80px;
+            height: 80px;
+            position: relative;
+        }
+
+        .confidence-circle {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: conic-gradient(#00b894 0deg 324deg, rgba(255,255,255,0.3) 324deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .vehicle-categories {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .category-group {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 16px;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .category-group.suggested {
+            border-color: #00b894;
+            background: linear-gradient(135deg, #00b894, #00a085);
+            color: white;
+        }
+
+        .category-group.selected {
+            border-color: #0984e3;
+            background: linear-gradient(135deg, #74b9ff, #0984e3);
+            color: white;
+        }
+
+        .category-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .vehicle-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .category-name {
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .axle-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .axle-btn {
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            border: none;
+            padding: 12px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 18px;
+            min-width: 50px;
+            transition: all 0.3s ease;
+        }
+
+        .category-group.selected .axle-btn,
+        .category-group.suggested .axle-btn {
+            background: rgba(255, 255, 255, 1);
+            color: #333;
+        }
+
+        .axle-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .axle-btn.active {
+            background: #fd79a8;
+            color: white;
+        }
+
+        .rate-display {
+            margin-top: 12px;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .control-panel {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .control-btn {
+            background: #ddd;
+            border: none;
+            padding: 16px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .control-btn.add-axle {
+            background: linear-gradient(135deg, #fd79a8, #fdcb6e);
+            color: white;
+        }
+
+        .control-btn.cancel {
+            background: linear-gradient(135deg, #ff7675, #d63031);
+            color: white;
+        }
+
+        .control-btn.undo {
+            background: linear-gradient(135deg, #74b9ff, #0984e3);
+            color: white;
+        }
+
+        .control-btn.process {
+            background: linear-gradient(135deg, #00b894, #00a085);
+            color: white;
+            grid-column: span 1;
+        }
+
+        .control-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .control-icon {
+            font-size: 24px;
+        }
+
+        /* Receipt Area */
+        .receipt-area {
+            grid-area: receipt;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .receipt-header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 2px dashed #ddd;
+        }
+
+        .receipt-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .receipt-details {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.4;
+        }
+
+        .receipt-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .receipt-line {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .receipt-line.total {
+            font-weight: bold;
+            font-size: 18px;
+            border-bottom: 2px solid #333;
+            margin-top: 12px;
+        }
+
+        .payment-methods {
+            margin-top: 20px;
+        }
+
+        .payment-methods h4 {
+            margin-bottom: 12px;
+            color: #333;
+        }
+
+        .payment-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .payment-btn {
+            background: #f8f9fa;
+            border: 2px solid #ddd;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .payment-btn.selected {
+            background: linear-gradient(135deg, #74b9ff, #0984e3);
+            color: white;
+            border-color: #0984e3;
+        }
+
+        .payment-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .hotkey {
+            display: block;
+            font-size: 10px;
+            opacity: 0.7;
+            margin-top: 4px;
+        }
+
+        .cash-input {
+            margin-top: 12px;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            width: 100%;
+            font-size: 16px;
+            text-align: center;
+        }
+
+        .change-display {
+            margin-top: 8px;
+            padding: 8px;
+            background: #e8f5e8;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        /* Status Bar */
+        .status-bar {
+            grid-area: status;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 20px 24px;
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            align-items: center;
+            gap: 24px;
+            color: white;
+        }
+
+        .vehicle-counters {
+            display: flex;
+            gap: 20px;
+        }
+
+        .counter {
+            text-align: center;
+        }
+
+        .counter-value {
+            display: block;
+            font-size: 24px;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+        }
+
+        .counter-label {
+            font-size: 12px;
+            color: #ccc;
+        }
+
+        .system-status {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            font-size: 12px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .status-dot.online { background: #00b894; }
+        .status-dot.warning { background: #fdcb6e; }
+        .status-dot.offline { background: #ff7675; }
+
+        .traffic-lights {
+            display: flex;
+            gap: 8px;
+        }
+
+        .traffic-light {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 2px solid #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .traffic-light.green { background: #00b894; }
+        .traffic-light.yellow { background: #fdcb6e; }
+        .traffic-light.red { background: #ff7675; }
+
+        /* Responsive Design */
+        @media (max-width: 1400px) {
+            .operator-interface {
+                grid-template-columns: 1fr;
+                grid-template-rows: 80px auto auto 100px;
+                grid-template-areas: 
+                    "header"
+                    "main"
+                    "receipt"
+                    "status";
+            }
+
+            .receipt-area {
+                max-height: 400px;
+                overflow-y: auto;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .vehicle-categories {
+                grid-template-columns: 1fr;
+            }
+
+            .control-panel {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .payment-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .suggested {
+            animation: pulse 2s infinite;
+        }
+
+        .suggested .vehicle-icon {
+            animation: pulse 1s infinite;
+        }
+
+        /* Accessibility */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="operator-interface">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-left">
+                <div class="logo">SP</div>
+                <div class="station-info">
+                    <h2>Peaje Puente Colorado</h2>
+                    <span>Caseta 05 - Carril Principal</span>
+                </div>
+            </div>
+            <div class="header-center">
+                <div class="current-time" id="currentTime">--:--:--</div>
+                <div class="current-date" id="currentDate">-- de ------ de ----</div>
+            </div>
+            <div class="header-right">
+                <div class="operator-info">
+                    <div class="operator-name">Juan Carlos Pérez</div>
+                    <div class="shift-time">Turno: 06:00 - 14:00</div>
+                </div>
+                <button class="logout-btn" onclick="logout()">Cerrar Sesión</button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Vehicle Detection -->
+            <div class="vehicle-detection">
+                <div class="detection-info">
+                    <h3>🚗 Vehículo Detectado</h3>
+                    <div class="plate-detected" id="plateDetected">ABC-123</div>
+                    <div class="detection-details">
+                        <span>🏃‍♂️ Velocidad: <strong id="vehicleSpeed">45</strong> km/h</span>
+                        <span>⚖️ Peso: <strong id="vehicleWeight">2,500</strong> kg</span>
+                        <span>📏 Largo: <strong id="vehicleLength">4.2</strong> m</span>
+                    </div>
+                </div>
+                <div class="confidence-meter">
+                    <div class="confidence-circle">
+                        <span id="confidenceValue">90%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vehicle Categories -->
+            <div class="vehicle-categories">
+                <!-- Motocicleta -->
+                <div class="category-group suggested" data-category="motorcycle">
+                    <div class="category-header">
+                        <div class="vehicle-icon">🏍️</div>
+                        <div class="category-name">MOTOCICLETA</div>
+                    </div>
+                    <div class="axle-buttons">
+                        <button class="axle-btn active" onclick="selectAxles(this, 'motorcycle', 1)">1</button>
+                    </div>
+                    <div class="rate-display">
+                        <strong>Tarifa: $12.06</strong> (IVA incluido)
+                    </div>
+                </div>
+
+                <!-- Automóvil -->
+                <div class="category-group" data-category="car">
+                    <div class="category-header">
+                        <div class="vehicle-icon">🚗</div>
+                        <div class="category-name">AUTOMÓVIL/PICK-UP</div>
+                    </div>
+                    <div class="axle-buttons">
+                        <button class="axle-btn" onclick="selectAxles(this, 'car', 2)">2</button>
+                    </div>
+                    <div class="rate-display">
+                        <strong>Tarifa: $25.00</strong> (IVA incluido)
+                    </div>
+                </div>
+
+                <!-- Autobús -->
+                <div class="category-group" data-category="bus">
+                    <div class="category-header">
+                        <div class="vehicle-icon">🚌</div>
+                        <div class="category-name">AUTOBÚS</div>
+                    </div>
+                    <div class="axle-buttons">
+                        <button class="axle-btn" onclick="selectAxles(this, 'bus', 2)">2</button>
+                        <button class="axle-btn" onclick="selectAxles(this, 'bus', 3)">3</button>
+                        <button class="axle-btn" onclick="selectAxles(this, 'bus', 4)">4</button>
+                    </div>
+                    <div class="rate-display">
+                        <strong>Tarifa: $45.00 - $85.00</strong> (IVA incluido)
+                    </div>
+                </div>
+
+                <!-- Camión -->
+                <div class="category-group" data-category="truck">
+                    <div class="category-header">
+                        <div class="vehicle-icon">🚛</div>
+                        <div class="category-name">CAMIÓN</div>
+                    </div>
+                    <div class="axle-buttons">
+                        <button class="axle-btn" onclick="selectAxles(this, 'truck', 2)">2</button>
+                        <button class="axle-btn" onclick="selectAxles(this, 'truck', 3)">3</button>
+                        <button class="axle-btn" onclick="selectAxles(this, 'truck', 4)">4</button>
+                        <button class="axle-btn" onclick="selectAxles(this, 'truck', 5)">5</button>
+                        <button class="axle-btn" onclick="selectAxles(this, 'truck', 6)">6</button>
+                        <button class="axle-btn" onclick="selectAxles(this, 'truck', 7)">7</button>
+                        <button class="axle-btn" onclick="selectAxles(this, 'truck', 8)">8</button>
+                        <button class="axle-btn" onclick="selectAxles(this, 'truck', 9)">9</button>
+                    </div>
+                    <div class="rate-display">
+                        <strong>Tarifa: $45.00 - $150.00</strong> (IVA incluido)
+                    </div>
+                </div>
+
+                <!-- Excepciones -->
+                <div class="category-group" data-category="special">
+                    <div class="category-header">
+                        <div class="vehicle-icon">🚨</div>
+                        <div class="category-name">EXCEPCIONES</div>
+                    </div>
+                    <div class="axle-buttons">
+                        <button class="axle-btn" onclick="selectSpecial('exempt')">EXENTO</button>
+                        <button class="axle-btn" onclick="selectSpecial('double')">EJE DOBLE</button>
+                    </div>
+                    <div class="rate-display">
+                        <strong>Requiere autorización</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Control Panel -->
+            <div class="control-panel">
+                <button class="control-btn add-axle" onclick="addAxle()">
+                    <div class="control-icon">➕</div>
+                    <span>+1 EJE</span>
+                </button>
+                <button class="control-btn cancel" onclick="cancelTransaction()">
+                    <div class="control-icon">❌</div>
+                    <span>CANCELAR</span>
+                </button>
+                <button class="control-btn undo" onclick="undoLast()">
+                    <div class="control-icon">↶</div>
+                    <span>DESHACER</span>
+                </button>
+                <button class="control-btn process" onclick="processTransaction()">
+                    <div class="control-icon">✅</div>
+                    <span>PROCESAR</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Receipt Area -->
+        <div class="receipt-area">
+            <div class="receipt-header">
+                <div class="receipt-title">Fideicomiso Puente Colorado</div>
+                <div class="receipt-details">
+                    Km. 3.5 Carretera San Luis RC - Mexicalí<br>
+                    FOLIO: 0000458 FECHA: 15/03/2025 13:24<br>
+                    CARRIL: 05 &nbsp;&nbsp;&nbsp;&nbsp; GAVERO: 25473
+                </div>
+            </div>
+
+            <div class="receipt-content">
+                <div class="receipt-line">
+                    <span>CLASE / IMPORTE / IVA / TOTAL</span>
+                </div>
+                <div class="receipt-line">
+                    <span id="receiptClass">MOTOCICLETA</span>
+                    <span id="receiptAmount">$12.06</span>
+                </div>
+                <div class="receipt-line total">
+                    <span>TOTAL A PAGAR</span>
+                    <span id="receiptTotal">$12.06</span>
+                </div>
+            </div>
+
+            <div class="payment-methods">
+                <h4>Método de Pago</h4>
+                <div class="payment-grid">
+                    <button class="payment-btn" onclick="selectPayment(this, 'cash')" data-hotkey="F1">
+                        💵 EFECTIVO
+                        <span class="hotkey">[F1]</span>
+                    </button>
+                    <button class="payment-btn" onclick="selectPayment(this, 'card')" data-hotkey="F2">
+                        💳 TARJETA
+                        <span class="hotkey">[F2]</span>
+                    </button>
+                    <button class="payment-btn" onclick="selectPayment(this, 'tag')" data-hotkey="F3">
+                        📱 TAG/QR
+                        <span class="hotkey">[F3]</span>
+                    </button>
+                    <button class="payment-btn" onclick="selectPayment(this, 'exempt')" data-hotkey="F4">
+                        🆓 EXENTO
+                        <span class="hotkey">[F4]</span>
+                    </button>
+                </div>
+
+                <div id="cashInputSection" style="display: none;">
+                    <input type="number" class="cash-input" placeholder="Importe recibido..." 
+                           oninput="calculateChange()" id="cashReceived" step="0.01">
+                    <div class="change-display" id="changeDisplay" style="display: none;">
+                        Cambio: $<span id="changeAmount">0.00</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div class="vehicle-counters">
+                <div class="counter">
+                    <span class="counter-value" id="vehicleCount">244</span>
+                    <span class="counter-label">Total Hoy</span>
+                </div>
+                <div class="counter">
+                    <span class="counter-value" id="revenueCount">$6,850</span>
+                    <span class="counter-label">Recaudado</span>
+                </div>
+                <div class="counter">
+                    <span class="counter-value" id="errorCount">2</span>
+                    <span class="counter-label">Errores</span>
+                </div>
+            </div>
+
+            <div class="system-status">
+                <div class="status-indicator">
+                    <div class="status-dot online"></div>
+                    <span>Cámara</span>
+                </div>
+                <div class="status-indicator">
+                    <div class="status-dot online"></div>
+                    <span>Red</span>
+                </div>
+                <div class="status-indicator">
+                    <div class="status-dot warning"></div>
+                    <span>Peso</span>
+                </div>
+                <div class="status-indicator">
+                    <div class="status-dot online"></div>
+                    <span>Barrera</span>
+                </div>
+            </div>
+
+            <div class="traffic-lights">
+                <div class="traffic-light red">🔴</div>
+                <div class="traffic-light yellow">🟡</div>
+                <div class="traffic-light green">🟢</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let currentSelection = {
+            category: 'motorcycle',
+            axles: 1,
+            rate: 12.06,
+            paymentMethod: null
+        };
+
+        // Update time
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('currentTime').textContent = now.toLocaleTimeString('es-ES');
+            document.getElementById('currentDate').textContent = now.toLocaleDateString('es-ES', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            });
+        }
+
+        // Initialize
+        updateTime();
+        setInterval(updateTime, 1000);
+
+        // Vehicle category selection
+        function selectAxles(button, category, axles) {
+            // Clear all selections
+            document.querySelectorAll('.category-group').forEach(group => {
+                group.classList.remove('selected', 'suggested');
+            });
+            document.querySelectorAll('.axle-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Set new selection
+            button.classList.add('active');
+            button.closest('.category-group').classList.add('selected');
+
+            // Update current selection
+            currentSelection.category = category;
+            currentSelection.axles = axles;
+            
+            // Calculate rate based on category and axles
+            const rates = {
+                motorcycle: { 1: 12.06 },
+                car: { 2: 25.00 },
+                bus: { 2: 45.00, 3: 65.00, 4: 85.00 },
+                truck: { 2: 45.00, 3: 65.00, 4: 85.00, 5: 105.00, 6: 125.00, 7: 145.00, 8: 165.00, 9: 185.00 }
+            };
+
+            currentSelection.rate = rates[category][axles] || 0;
+
+            // Update receipt
+            updateReceipt();
+        }
+
+        function selectSpecial(type) {
+            // Handle special cases
+            console.log('Special selection:', type);
+        }
+
+        function addAxle() {
+            console.log('Adding axle...');
+        }
+
+        function cancelTransaction() {
+            // Reset selection
+            document.querySelectorAll('.category-group').forEach(group => {
+                group.classList.remove('selected');
+            });
+            document.querySelectorAll('.axle-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Set default (motorcycle)
+            currentSelection = { category: 'motorcycle', axles: 1, rate: 12.06, paymentMethod: null };
+            document.querySelector('[data-category="motorcycle"]').classList.add('suggested');
+            updateReceipt();
+        }
+
+        function undoLast() {
+            console.log('Undoing last action...');
+        }
+
+        function processTransaction() {
+            if (!currentSelection.paymentMethod) {
+                alert('Por favor seleccione un método de pago');
+                return;
+            }
+
+            if (currentSelection.paymentMethod === 'cash') {
+                const received = parseFloat(document.getElementById('cashReceived').value);
+                if (!received || received < currentSelection.rate) {
+                    alert('El importe recibido debe ser mayor o igual al total');
+                    return;
+                }
+            }
+
+            alert(`Transacción procesada exitosamente!\nCategoría: ${currentSelection.category}\nEjes: ${currentSelection.axles}\nTotal: $${currentSelection.rate.toFixed(2)}`);
+            
+            // Update counters
+            const currentCount = parseInt(document.getElementById('vehicleCount').textContent);
+            document.getElementById('vehicleCount').textContent = currentCount + 1;
+            
+            // Reset for next vehicle
+            cancelTransaction();
+        }
+
+        // Payment method selection
+        function selectPayment(button, method) {
+            document.querySelectorAll('.payment-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            button.classList.add('selected');
+            
+            currentSelection.paymentMethod = method;
+            
+            // Show/hide cash input
+            const cashSection = document.getElementById('cashInputSection');
+            if (method === 'cash') {
+                cashSection.style.display = 'block';
+            } else {
+                cashSection.style.display = 'none';
+            }
+        }
+
+        function calculateChange() {
+            const received = parseFloat(document.getElementById('cashReceived').value);
+            const total = currentSelection.rate;
+            
+            if (received && received >= total) {
+                const change = received - total;
+                document.getElementById('changeAmount').textContent = change.toFixed(2);
+                document.getElementById('changeDisplay').style.display = 'block';
+            } else {
+                document.getElementById('changeDisplay').style.display = 'none';
+            }
+        }
+
+        function updateReceipt() {
+            const categoryNames = {
+                motorcycle: 'MOTOCICLETA',
+                car: 'AUTOMÓVIL',
+                bus: 'AUTOBÚS',
+                truck: 'CAMIÓN',
+                special: 'ESPECIAL'
+            };
+
+            document.getElementById('receiptClass').textContent = 
+                `${categoryNames[currentSelection.category]} (${currentSelection.axles} ejes)`;
+            document.getElementById('receiptAmount').textContent = `$${currentSelection.rate.toFixed(2)}`;
+            document.getElementById('receiptTotal').textContent = `$${currentSelection.rate.toFixed(2)}`;
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(event) {
+            switch(event.key) {
+                case 'F1':
+                    event.preventDefault();
+                    document.querySelector('[data-hotkey="F1"]').click();
+                    break;
+                case 'F2':
+                    event.preventDefault();
+                    document.querySelector('[data-hotkey="F2"]').click();
+                    break;
+                case 'F3':
+                    event.preventDefault();
+                    document.querySelector('[data-hotkey="F3"]').click();
+                    break;
+                case 'F4':
+                    event.preventDefault();
+                    document.querySelector('[data-hotkey="F4"]').click();
+                    break;
+                case 'Enter':
+                    event.preventDefault();
+                    processTransaction();
+                    break;
+                case 'Escape':
+                    event.preventDefault();
+                    cancelTransaction();
+                    break;
+            }
+        });
+
+        function logout() {
+            if (confirm('¿Está seguro que desea cerrar sesión?')) {
+                alert('Cerrando sesión...');
+            }
+        }
+
+        // Simulate vehicle detection updates
+        function simulateVehicleDetection() {
+            const plates = ['XYZ-789', 'DEF-456', 'GHI-123', 'JKL-987', 'MNO-654'];
+            const speeds = [35, 42, 38, 45, 40];
+            const weights = [1800, 2500, 3200, 2100, 2800];
+            const confidences = [85, 92, 88, 94, 90];
+
+            setInterval(() => {
+                const index = Math.floor(Math.random() * plates.length);
+                document.getElementById('plateDetected').textContent = plates[index];
+                document.getElementById('vehicleSpeed').textContent = speeds[index];
+                document.getElementById('vehicleWeight').textContent = weights[index].toLocaleString();
+                document.getElementById('confidenceValue').textContent = confidences[index] + '%';
+            }, 10000);
+        }
+
+        simulateVehicleDetection();
+    </script>
+</body>
+</html>

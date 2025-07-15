@@ -2,10 +2,8 @@
  * Public API Surface of data-access
  */
 
-export * from './lib/services/toll-api.service';
-export * from './lib/services/lane.service';
-export * from './lib/services/vehicle.service';
-export * from './lib/models/lane.model';
-export * from './lib/models/vehicle.model';
-export * from './lib/models/transaction.model';
-export * from './lib/data-access.module';
+// Base API Service and Token
+export * from './lib/services/base-api.service';
+// Catalog Services and Models
+export * from './lib/services/catalog.services';
+export * from './lib/models/catalog.models';

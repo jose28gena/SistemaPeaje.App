@@ -3,8 +3,12 @@ import { Routes } from '@angular/router';
 export const routes: Routes = [
   {
     path: '',
-    redirectTo: '/reports',
+    redirectTo: '/admin',
     pathMatch: 'full'
+  },
+  {
+    path: 'admin',
+    loadChildren: () => import('./features/admin/admin.module').then(m => m.AdminModule)
   },
   {
     path: 'reports',
@@ -15,11 +19,7 @@ export const routes: Routes = [
     loadChildren: () => import('./features/analytics/analytics.module').then(m => m.AnalyticsModule)
   },
   {
-    path: 'admin',
-    loadChildren: () => import('./features/admin/admin.module').then(m => m.AdminModule)
-  },
-  {
     path: '**',
-    redirectTo: '/reports'
+    redirectTo: '/admin'
   }
 ];

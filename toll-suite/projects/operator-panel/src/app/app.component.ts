@@ -24,6 +24,10 @@ import { MatListModule } from '@angular/material/list';
       <mat-sidenav #drawer class="sidenav" fixedInViewport="true" mode="side" opened="true">
         <mat-toolbar>Panel Operador</mat-toolbar>
         <mat-nav-list>
+          <a mat-list-item routerLink="/operator">
+            <mat-icon>assignment_ind</mat-icon>
+            <span>Interfaz Operador</span>
+          </a>
           <a mat-list-item routerLink="/dashboard">
             <mat-icon>dashboard</mat-icon>
             <span>Dashboard</span>
