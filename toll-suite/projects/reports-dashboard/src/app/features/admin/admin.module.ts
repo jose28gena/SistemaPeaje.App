@@ -19,13 +19,15 @@ import { ClienteFormComponent } from './components/shared/cliente-form/cliente-f
 import { TarjetaFormComponent } from './components/shared/tarjeta-form/tarjeta-form.component';
 import { CarrilFormComponent } from './components/shared/carril-form/carril-form.component';
 
+// Feature Modules
+import { TarifasModule } from './pages/tarifas/tarifas.module';
+
 // Catalog Pages
 import { EstacionesComponent } from './pages/estaciones/estaciones.component';
 import { CarrilesComponent } from './pages/carriles/carriles.component';
 import { TiposVehiculoComponent } from './pages/tipos-vehiculo/tipos-vehiculo.component';
 import { TiposPagoComponent } from './pages/tipos-pago/tipos-pago.component';
 import { TiposClienteComponent } from './pages/tipos-cliente/tipos-cliente.component';
-import { TarifasComponent } from './pages/tarifas/tarifas.component';
 import { ClientesComponent } from './pages/clientes/clientes.component';
 import { EmpleadosComponent } from './pages/empleados/empleados.component';
 import { TarjetasRfidComponent } from './pages/tarjetas-rfid/tarjetas-rfid.component';
@@ -53,7 +55,6 @@ import { TestComponent } from './pages/test/test.component';
     TiposVehiculoComponent,
     TiposPagoComponent,
     TiposClienteComponent,
-    TarifasComponent,
     ClientesComponent,
     EmpleadosComponent,
     TarjetasRfidComponent,
@@ -67,7 +68,8 @@ import { TestComponent } from './pages/test/test.component';
     FormsModule,
     RouterModule,
     HttpClientModule,
-    AdminRoutingModule
+    AdminRoutingModule,
+    TarifasModule
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   providers: [

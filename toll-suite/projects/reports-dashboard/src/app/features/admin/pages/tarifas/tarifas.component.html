@@ -1,0 +1,283 @@
+<div class="tarifas-page">
+  <div class="page-header">
+    <div>
+      <h1>Gestión de Tarifas</h1>
+      <p>Administrar las tarifas del sistema de peaje</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-secondary" (click)="onRefresh()">
+        <i class="fas fa-sync"></i>
+        Actualizar
+      </button>
+      <button class="btn btn-primary" (click)="onAdd()">
+        <i class="fas fa-plus"></i>
+        Nueva Tarifa
+      </button>
+    </div>
+  </div>
+
+  <div class="table-controls">
+    <div class="search-box">
+      <input 
+        type="text" 
+        placeholder="Buscar tarifas..." 
+        [(ngModel)]="searchTerm"
+        (input)="onSearch()"
+        class="search-input"
+      >
+      <i class="fas fa-search search-icon"></i>
+    </div>
+    <div class="filter-controls">
+      <select [(ngModel)]="selectedTipoVehiculo" (change)="onFilterByTipoVehiculo()" class="filter-select">
+        <option value="">Todos los tipos de vehículo ({{ tiposVehiculo.length }})</option>
+        <option *ngFor="let tipo of tiposVehiculo; trackBy: trackByTipoVehiculoId" [value]="tipo.id">
+          {{ tipo.nombre }}
+        </option>
+      </select>
+      <select [(ngModel)]="selectedEstacion" (change)="onFilterByEstacion()" class="filter-select">
+        <option value="">Todas las estaciones ({{ estaciones.length }})</option>
+        <option *ngFor="let estacion of estaciones; trackBy: trackByEstacionId" [value]="estacion.id">
+          {{ estacion.nombre }}
+        </option>
+      </select>
+      <select [(ngModel)]="vigenciaFilter" (change)="onFilterByVigencia()" class="filter-select">
+        <option value="todas">Todas las tarifas</option>
+        <option value="vigentes">Solo vigentes</option>
+        <option value="noVigentes">Solo no vigentes</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="table-container" *ngIf="!loading">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th (click)="sort('tipoVehiculo.nombre')" class="sortable">
+            Tipo de Vehículo
+            <i class="fas fa-sort sort-icon"></i>
+          </th>
+          <th (click)="sort('estacion.nombre')" class="sortable">
+            Estación
+            <i class="fas fa-sort sort-icon"></i>
+          </th>
+          <th (click)="sort('monto')" class="sortable">
+            Monto
+            <i class="fas fa-sort sort-icon"></i>
+          </th>
+          <th (click)="sort('fechaVigenciaInicio')" class="sortable">
+            Vigencia Desde
+            <i class="fas fa-sort sort-icon"></i>
+          </th>
+          <th (click)="sort('fechaVigenciaFin')" class="sortable">
+            Vigencia Hasta
+            <i class="fas fa-sort sort-icon"></i>
+          </th>
+          <th>Estado</th>
+          <th class="actions-column">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let tarifa of pagedTarifas; trackBy: trackByTarifaId" class="table-row">
+          <td class="font-medium">{{ tarifa.tipoVehiculo?.nombre || 'N/A' }}</td>
+          <td>{{ tarifa.estacion?.nombre || 'Todas las estaciones' }}</td>
+          <td class="monto-col">${{ tarifa.monto.toFixed(2) }}</td>
+          <td>{{ formatDate(tarifa.fechaVigenciaInicio) }}</td>
+          <td>{{ formatDate(tarifa.fechaVigenciaFin || '') }}</td>
+          <td>
+            <span class="status-badge" [class]="getVigenciaClass(tarifa.esVigente)">
+              {{ tarifa.esVigente ? 'Vigente' : 'No vigente' }}
+            </span>
+          </td>
+          <td class="actions-cell">
+            <div class="action-buttons">
+              <button 
+                class="btn-action btn-view" 
+                (click)="onView(tarifa)"
+                title="Ver detalles"
+              >
+                <i class="fas fa-eye"></i>
+              </button>
+              <button 
+                class="btn-action btn-edit" 
+                (click)="onEdit(tarifa)"
+                title="Editar tarifa"
+              >
+                <i class="fas fa-edit"></i>
+              </button>
+              <button 
+                class="btn-action btn-delete" 
+                (click)="onDelete(tarifa)"
+                title="Eliminar tarifa"
+              >
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="no-data" *ngIf="pagedTarifas.length === 0 && !loading">
+      <i class="fas fa-dollar-sign"></i>
+      <h3>No hay tarifas disponibles</h3>
+      <p>No se pudieron cargar las tarifas desde el servidor, o no hay tarifas registradas en el sistema.</p>
+      <div class="no-data-actions">
+        <button class="btn btn-primary" (click)="onAdd()">
+          <i class="fas fa-plus"></i>
+          Agregar Tarifa
+        </button>
+        <button class="btn btn-secondary" (click)="onRefresh()">
+          <i class="fas fa-sync"></i>
+          Intentar Nuevamente
+        </button>
+        <button class="btn btn-secondary" (click)="loadMockData()">
+          <i class="fas fa-database"></i>
+          Cargar Datos de Prueba
+        </button>
+      </div>
+    </div>
+
+    <div class="table-footer">
+      <div class="table-info">
+        Mostrando {{ (currentPage - 1) * pageSize + 1 }} - {{ getMaxShown() }} 
+        de {{ totalTarifas }} tarifas
+      </div>
+      <div class="pagination">
+        <button 
+          class="btn btn-sm" 
+          (click)="goToPage(currentPage - 1)"
+          [disabled]="currentPage === 1"
+        >
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        <span class="page-info">Página {{ currentPage }} de {{ totalPages }}</span>
+        <button 
+          class="btn btn-sm" 
+          (click)="goToPage(currentPage + 1)"
+          [disabled]="currentPage === totalPages"
+        >
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="loading-container" *ngIf="loading">
+    <i class="fas fa-spinner fa-spin"></i>
+    <p>Cargando tarifas...</p>
+  </div>
+
+  <!-- Tarifa Form Modal -->
+  <app-tarifa-form
+    [isOpen]="showTarifaForm"
+    [tarifa]="selectedTarifa"
+    [isSubmitting]="isSubmittingForm"
+    [tiposVehiculo]="tiposVehiculo"
+    [estaciones]="estaciones"
+    (save)="onSaveTarifa($event)"
+    (cancel)="onCancelForm()"
+  ></app-tarifa-form>
+
+  <!-- Confirm Dialog -->
+  <div class="modal-overlay" *ngIf="showDeleteDialog" (click)="cancelDelete()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Confirmar Eliminación</h3>
+      </div>
+      <div class="modal-body">
+        <p>¿Está seguro que desea eliminar la tarifa de <strong>{{ tarifaToDelete?.tipoVehiculo?.nombre }}</strong> 
+          {{ tarifaToDelete?.estacion ? 'para la estación ' + tarifaToDelete?.estacion?.nombre : '' }}?</p>
+        <p class="text-warning">Esta acción no se puede deshacer.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cancelDelete()">
+          Cancelar
+        </button>
+        <button type="button" class="btn btn-danger" (click)="confirmDelete()">
+          <i class="fas fa-trash"></i>
+          Eliminar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- View Tarifa Modal -->
+  <div class="modal-overlay" *ngIf="showViewDialog" (click)="closeViewDialog()">
+    <div class="modal-content view-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Detalles de la Tarifa</h3>
+        <button class="btn-close" (click)="closeViewDialog()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="modal-body" *ngIf="selectedTarifa">
+        <div class="tarifa-details">
+          <div class="detail-section">
+            <h4><i class="fas fa-car"></i> Información de la Tarifa</h4>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <label>Tipo de Vehículo:</label>
+                <span>{{ selectedTarifa.tipoVehiculo?.nombre || 'N/A' }}</span>
+              </div>
+              <div class="detail-item">
+                <label>Categoría:</label>
+                <span>{{ selectedTarifa.tipoVehiculo?.categoria || 'N/A' }}</span>
+              </div>
+              <div class="detail-item">
+                <label>Estación:</label>
+                <span>{{ selectedTarifa.estacion?.nombre || 'Todas las estaciones' }}</span>
+              </div>
+              <div class="detail-item">
+                <label>Monto:</label>
+                <span class="monto-badge">${{ selectedTarifa.monto.toFixed(2) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="detail-section">
+            <h4><i class="fas fa-calendar"></i> Vigencia</h4>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <label>Vigente desde:</label>
+                <span>{{ formatDate(selectedTarifa.fechaVigenciaInicio) }}</span>
+              </div>
+              <div class="detail-item">
+                <label>Vigente hasta:</label>
+                <span>{{ formatDate(selectedTarifa.fechaVigenciaFin || '') || 'Sin fecha de término' }}</span>
+              </div>
+              <div class="detail-item">
+                <label>Estado:</label>
+                <span class="status-badge" [class]="getVigenciaClass(selectedTarifa.esVigente)">
+                  {{ selectedTarifa.esVigente ? 'Vigente' : 'No vigente' }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="detail-section">
+            <h4><i class="fas fa-info-circle"></i> Información del Sistema</h4>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <label>Fecha de Creación:</label>
+                <span>{{ formatDate(selectedTarifa.fechaCreacion) }}</span>
+              </div>
+              <div class="detail-item" *ngIf="selectedTarifa.fechaActualizacion">
+                <label>Última Actualización:</label>
+                <span>{{ formatDate(selectedTarifa.fechaActualizacion) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeViewDialog()">
+          Cerrar
+        </button>
+        <button type="button" class="btn btn-primary" (click)="onEdit(selectedTarifa!)">
+          <i class="fas fa-edit"></i>
+          Editar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
