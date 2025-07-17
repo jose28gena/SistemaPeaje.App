@@ -1,5 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ClientesService, TiposClienteService, Cliente, TipoCliente, PaginatedResponse } from '@toll-suite/data-access';
+import { Subscription } from 'rxjs';
+import { catchError, finalize } from 'rxjs/operators';
 
 @Component({
   selector: 'app-clientes',

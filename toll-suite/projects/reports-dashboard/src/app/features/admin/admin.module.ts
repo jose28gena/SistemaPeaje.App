@@ -17,6 +17,7 @@ import { EstacionFormComponent } from './components/shared/estacion-form/estacio
 import { EmpleadoFormComponent } from './components/shared/empleado-form/empleado-form.component';
 import { ClienteFormComponent } from './components/shared/cliente-form/cliente-form.component';
 import { TarjetaFormComponent } from './components/shared/tarjeta-form/tarjeta-form.component';
+import { CarrilFormComponent } from './components/shared/carril-form/carril-form.component';
 
 // Catalog Pages
 import { EstacionesComponent } from './pages/estaciones/estaciones.component';
@@ -44,6 +45,7 @@ import { TestComponent } from './pages/test/test.component';
     EmpleadoFormComponent,
     ClienteFormComponent,
     TarjetaFormComponent,
+    CarrilFormComponent,
     
     // Catalog Pages
     EstacionesComponent,
