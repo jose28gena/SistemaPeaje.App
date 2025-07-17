@@ -143,12 +143,16 @@ import { EmpleadosService, EstacionesService, Empleado, Estacion, PaginatedRespo
 
         <div class="no-data" *ngIf="pagedEmpleados.length === 0 && !loading">
           <i class="fas fa-user-slash"></i>
-          <h3>No hay empleados registrados</h3>
-          <p>No se encontraron empleados que coincidan con los criterios de búsqueda.</p>
+          <h3>No hay empleados disponibles</h3>
+          <p>No se pudieron cargar los empleados desde el servidor, o no hay empleados registrados en el sistema.</p>
           <div class="no-data-actions">
             <button class="btn btn-primary" (click)="onAdd()">
               <i class="fas fa-plus"></i>
               Agregar Empleado
+            </button>
+            <button class="btn btn-secondary" (click)="onRefresh()">
+              <i class="fas fa-sync"></i>
+              Intentar Nuevamente
             </button>
             <button class="btn btn-secondary" (click)="forceLoadMockData()">
               <i class="fas fa-database"></i>
@@ -235,31 +239,31 @@ import { EmpleadosService, EstacionesService, Empleado, Estacion, PaginatedRespo
                 <div class="detail-grid">
                   <div class="detail-item">
                     <label>Cédula:</label>
-                    <span>{{ selectedEmpleado.cedula }}</span>
+                    <span>{{ selectedEmpleado!.cedula }}</span>
                   </div>
                   <div class="detail-item">
                     <label>Nombres:</label>
-                    <span>{{ selectedEmpleado.nombres }}</span>
+                    <span>{{ selectedEmpleado!.nombres }}</span>
                   </div>
                   <div class="detail-item">
                     <label>Apellidos:</label>
-                    <span>{{ selectedEmpleado.apellidos }}</span>
+                    <span>{{ selectedEmpleado!.apellidos }}</span>
                   </div>
                   <div class="detail-item">
                     <label>Email:</label>
-                    <span>{{ selectedEmpleado.email }}</span>
+                    <span>{{ selectedEmpleado!.email }}</span>
                   </div>
                   <div class="detail-item">
                     <label>Teléfono:</label>
-                    <span>{{ selectedEmpleado.telefono }}</span>
+                    <span>{{ selectedEmpleado!.telefono }}</span>
                   </div>
                   <div class="detail-item">
                     <label>Dirección:</label>
-                    <span>{{ selectedEmpleado.direccion }}</span>
+                    <span>{{ selectedEmpleado!.direccion }}</span>
                   </div>
                   <div class="detail-item">
                     <label>Fecha de Nacimiento:</label>
-                    <span>{{ formatDate(selectedEmpleado.fechaNacimiento) }}</span>
+                    <span>{{ formatDate(selectedEmpleado!.fechaNacimiento) }}</span>
                   </div>
                   <div class="detail-item" *ngIf="selectedEmpleado.numeroEmergencia">
                     <label>Contacto de Emergencia:</label>
@@ -990,17 +994,13 @@ export class EmpleadosComponent implements OnInit {
     // Load estaciones
     this.loadEstaciones();
     
-    // Load mock data immediately to ensure data is available
-    this.loadMockEmpleados();
-    
-    // Try to load real data as well, but don't depend on it
+    // Only try to load real data from API
     this.loadEmpleados();
   }
 
   loadEmpleados() {
     console.log('Attempting to load empleados from API...');
     
-    // Try to get real data from API, but don't replace mock data if API fails
     this.empleadosService.getAll().subscribe({
       next: (response: PaginatedResponse<Empleado> | Empleado[]) => {
         console.log('API response for empleados:', response);
@@ -1013,22 +1013,18 @@ export class EmpleadosComponent implements OnInit {
           apiEmpleados = response.data || [];
         }
         
-        // Only replace mock data if we actually got data from API
-        if (apiEmpleados.length > 0) {
-          console.log('Replacing mock data with API data:', apiEmpleados.length, 'records');
-          this.empleados = apiEmpleados;
-          this.totalEmpleados = apiEmpleados.length;
-          this.filterAndPaginateEmpleados();
-        } else {
-          console.log('API returned no data, keeping mock data');
-        }
-        
+        console.log('Loading API data:', apiEmpleados.length, 'records');
+        this.empleados = apiEmpleados;
+        this.totalEmpleados = apiEmpleados.length;
+        this.filterAndPaginateEmpleados();
         this.loading = false;
       },
       error: (error: any) => {
-        console.warn('API not available, using mock data:', error);
+        console.warn('API not available:', error);
+        this.empleados = [];
+        this.totalEmpleados = 0;
         this.loading = false;
-        // Mock data is already loaded, so we don't need to do anything
+        this.filterAndPaginateEmpleados();
       }
     });
   }
@@ -1339,9 +1335,8 @@ export class EmpleadosComponent implements OnInit {
     this.empleados = [];
     this.pagedEmpleados = [];
     
-    // Reload data
+    // Reload data from API only
     this.loadEstaciones();
-    this.loadMockEmpleados();
     this.loadEmpleados();
   }
 
@@ -1357,8 +1352,8 @@ export class EmpleadosComponent implements OnInit {
           this.isSubmittingForm = false;
         },
         error: (error: any) => {
-          console.warn('API not available, updating mock data:', error);
-          this.updateMockEmpleado(empleadoData);
+          console.error('Error al actualizar empleado - API no disponible:', error);
+          alert('No se pudo actualizar el empleado. Verifique la conexión con el servidor.');
           this.isSubmittingForm = false;
         }
       });
@@ -1371,8 +1366,8 @@ export class EmpleadosComponent implements OnInit {
           this.isSubmittingForm = false;
         },
         error: (error: any) => {
-          console.warn('API not available, adding to mock data:', error);
-          this.addMockEmpleado(empleadoData);
+          console.error('Error al crear empleado - API no disponible:', error);
+          alert('No se pudo crear el empleado. Verifique la conexión con el servidor.');
           this.isSubmittingForm = false;
         }
       });
@@ -1450,8 +1445,9 @@ export class EmpleadosComponent implements OnInit {
           this.cancelDelete();
         },
         error: (error: any) => {
-          console.warn('API not available, removing from mock data:', error);
-          this.deleteMockEmpleado(this.empleadoToDelete!.id);
+          console.error('Error al eliminar empleado - API no disponible:', error);
+          alert('No se pudo eliminar el empleado. Verifique la conexión con el servidor.');
+          this.cancelDelete();
         }
       });
     }

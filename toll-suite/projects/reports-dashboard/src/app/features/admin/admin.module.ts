@@ -1,4 +1,4 @@
-import { NgModule } from '@angular/core';
+import { NgModule, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -15,6 +15,8 @@ import { ConfirmDialogComponent } from './components/shared/confirm-dialog/confi
 import { LoadingSpinnerComponent } from './components/shared/loading-spinner/loading-spinner.component';
 import { EstacionFormComponent } from './components/shared/estacion-form/estacion-form.component';
 import { EmpleadoFormComponent } from './components/shared/empleado-form/empleado-form.component';
+import { ClienteFormComponent } from './components/shared/cliente-form/cliente-form.component';
+import { TarjetaFormComponent } from './components/shared/tarjeta-form/tarjeta-form.component';
 
 // Catalog Pages
 import { EstacionesComponent } from './pages/estaciones/estaciones.component';
@@ -26,6 +28,7 @@ import { TarifasComponent } from './pages/tarifas/tarifas.component';
 import { ClientesComponent } from './pages/clientes/clientes.component';
 import { EmpleadosComponent } from './pages/empleados/empleados.component';
 import { TarjetasRfidComponent } from './pages/tarjetas-rfid/tarjetas-rfid.component';
+import { TarjetasRfidNewComponent } from './pages/tarjetas-rfid/tarjetas-rfid-new.component';
 import { UsuariosComponent } from './pages/usuarios/usuarios.component';
 import { TestComponent } from './pages/test/test.component';
 
@@ -39,6 +42,8 @@ import { TestComponent } from './pages/test/test.component';
     LoadingSpinnerComponent,
     EstacionFormComponent,
     EmpleadoFormComponent,
+    ClienteFormComponent,
+    TarjetaFormComponent,
     
     // Catalog Pages
     EstacionesComponent,
@@ -50,6 +55,7 @@ import { TestComponent } from './pages/test/test.component';
     ClientesComponent,
     EmpleadosComponent,
     TarjetasRfidComponent,
+    TarjetasRfidNewComponent,
     UsuariosComponent,
     TestComponent
   ],
@@ -61,6 +67,7 @@ import { TestComponent } from './pages/test/test.component';
     HttpClientModule,
     AdminRoutingModule
   ],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
   providers: [
     { provide: API_BASE_URL, useValue: environment.apiUrl }
   ]

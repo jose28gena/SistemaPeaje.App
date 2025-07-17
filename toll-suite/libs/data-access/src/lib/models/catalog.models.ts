@@ -98,6 +98,11 @@ export interface TarjetaRfid extends BaseEntity {
   fechaEmision: Date;
   fechaVencimiento?: Date;
   estado: string;
+  clienteNombre?: string;
+  tipoCliente?: string;
+  esResidente?: boolean;
+  ultimaRecarga?: Date;
+  transaccionesRealizadas?: number;
 }
 
 export interface Usuario extends BaseEntity {

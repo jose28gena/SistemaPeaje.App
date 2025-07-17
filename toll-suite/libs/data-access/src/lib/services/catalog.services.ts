@@ -20,7 +20,7 @@ import {
 })
 export class EstacionesService extends BaseApiService<Estacion> {
   constructor(http: HttpClient, @Inject(API_BASE_URL) baseUrl: string) {
-    super(http, 'estaciones', baseUrl);
+    super(http, 'Estaciones', baseUrl);
   }
 
   getCarrilesByEstacion(estacionId: number): Observable<Carril[]> {
@@ -33,7 +33,7 @@ export class EstacionesService extends BaseApiService<Estacion> {
 })
 export class CarrilesService extends BaseApiService<Carril> {
   constructor(http: HttpClient, @Inject(API_BASE_URL) baseUrl: string) {
-    super(http, 'carriles', baseUrl);
+    super(http, 'Carriles', baseUrl);
   }
 }
 
@@ -42,7 +42,7 @@ export class CarrilesService extends BaseApiService<Carril> {
 })
 export class TiposVehiculoService extends BaseApiService<TipoVehiculo> {
   constructor(http: HttpClient, @Inject(API_BASE_URL) baseUrl: string) {
-    super(http, 'tipos-vehiculo', baseUrl);
+    super(http, 'TiposVehiculo', baseUrl);
   }
 }
 
@@ -51,7 +51,7 @@ export class TiposVehiculoService extends BaseApiService<TipoVehiculo> {
 })
 export class TiposPagoService extends BaseApiService<TipoPago> {
   constructor(http: HttpClient, @Inject(API_BASE_URL) baseUrl: string) {
-    super(http, 'tipos-pago', baseUrl);
+    super(http, 'TiposPago', baseUrl);
   }
 }
 
@@ -60,7 +60,7 @@ export class TiposPagoService extends BaseApiService<TipoPago> {
 })
 export class TiposClienteService extends BaseApiService<TipoCliente> {
   constructor(http: HttpClient, @Inject(API_BASE_URL) baseUrl: string) {
-    super(http, 'tipos-cliente', baseUrl);
+    super(http, 'TiposCliente', baseUrl);
   }
 }
 
@@ -69,7 +69,7 @@ export class TiposClienteService extends BaseApiService<TipoCliente> {
 })
 export class TarifasService extends BaseApiService<Tarifa> {
   constructor(http: HttpClient, @Inject(API_BASE_URL) baseUrl: string) {
-    super(http, 'tarifas', baseUrl);
+    super(http, 'Tarifas', baseUrl);
   }
 
   getByTipoVehiculo(tipoVehiculoId: number): Observable<Tarifa[]> {
@@ -90,11 +90,102 @@ export class TarifasService extends BaseApiService<Tarifa> {
 })
 export class ClientesService extends BaseApiService<Cliente> {
   constructor(http: HttpClient, @Inject(API_BASE_URL) baseUrl: string) {
-    super(http, 'clientes', baseUrl);
+    super(http, 'Clientes', baseUrl);
+  }
+
+  /**
+   * Obtiene todos los clientes (raw array, not paginated)
+   */
+  getAllRaw(): Observable<Cliente[]> {
+    return this.http.get<Cliente[]>(`${this.baseUrl}/${this.endpoint}`);
+  }
+
+  /**
+   * Crea un nuevo cliente
+   */
+  createCliente(request: any): Observable<Cliente> {
+    return this.http.post<Cliente>(`${this.baseUrl}/${this.endpoint}`, request);
+  }
+
+  /**
+   * Actualiza un cliente existente
+   */
+  updateCliente(id: number, request: any): Observable<void> {
+    return this.http.put<void>(`${this.baseUrl}/${this.endpoint}/${id}`, request);
+  }
+
+  /**
+   * Obtiene las tarjetas RFID de un cliente
+   */
+  getTarjetasCliente(clienteId: number): Observable<TarjetaRfid[]> {
+    return this.http.get<TarjetaRfid[]>(`${this.baseUrl}/${this.endpoint}/${clienteId}/tarjetas`);
   }
 
   getByDocumento(numeroDocumento: string): Observable<Cliente> {
     return this.http.get<Cliente>(`${this.baseUrl}/${this.endpoint}/by-documento/${numeroDocumento}`);
+  }
+
+  getTarjetas(clienteId: number): Observable<TarjetaRfid[]> {
+    return this.http.get<TarjetaRfid[]>(`${this.baseUrl}/${this.endpoint}/${clienteId}/tarjetas`);
+  }
+}
+
+@Injectable({
+  providedIn: 'root'
+})
+export class TarjetasRfidService extends BaseApiService<TarjetaRfid> {
+  constructor(http: HttpClient, @Inject(API_BASE_URL) baseUrl: string) {
+    super(http, 'TarjetasRfid', baseUrl);
+  }
+
+  /**
+   * Obtiene todas las tarjetas RFID (raw array, not paginated)
+   */
+  getAllRaw(): Observable<TarjetaRfid[]> {
+    return this.http.get<TarjetaRfid[]>(`${this.baseUrl}/${this.endpoint}`);
+  }
+
+  /**
+   * Obtiene una tarjeta RFID por número de tag
+   */
+  getByTag(numeroTag: string): Observable<TarjetaRfid> {
+    return this.http.get<TarjetaRfid>(`${this.baseUrl}/${this.endpoint}/tag/${numeroTag}`);
+  }
+
+  /**
+   * Crea una nueva tarjeta RFID
+   */
+  createTarjeta(request: any): Observable<TarjetaRfid> {
+    return this.http.post<TarjetaRfid>(`${this.baseUrl}/${this.endpoint}`, request);
+  }
+
+  /**
+   * Recarga una tarjeta RFID
+   */
+  recargarTarjeta(id: number, request: any): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/${this.endpoint}/${id}/recargar`, request);
+  }
+
+  /**
+   * Bloquea una tarjeta RFID
+   */
+  bloquearTarjeta(id: number): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/${this.endpoint}/${id}/bloquear`, {});
+  }
+
+  /**
+   * Activa una tarjeta RFID
+   */
+  activarTarjeta(id: number): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/${this.endpoint}/${id}/activar`, {});
+  }
+
+  getByCliente(clienteId: number): Observable<TarjetaRfid[]> {
+    return this.http.get<TarjetaRfid[]>(`${this.baseUrl}/${this.endpoint}/by-cliente/${clienteId}`);
+  }
+
+  getByNumeroTag(numeroTag: string): Observable<TarjetaRfid> {
+    return this.getByTag(numeroTag);
   }
 }
 
@@ -103,7 +194,7 @@ export class ClientesService extends BaseApiService<Cliente> {
 })
 export class EmpleadosService extends BaseApiService<Empleado> {
   constructor(http: HttpClient, @Inject(API_BASE_URL) baseUrl: string) {
-    super(http, 'empleados', baseUrl);
+    super(http, 'Empleados', baseUrl);
   }
 
   getByCedula(cedula: string): Observable<Empleado> {
@@ -122,30 +213,9 @@ export class EmpleadosService extends BaseApiService<Empleado> {
 @Injectable({
   providedIn: 'root'
 })
-export class TarjetasRfidService extends BaseApiService<TarjetaRfid> {
-  constructor(http: HttpClient, @Inject(API_BASE_URL) baseUrl: string) {
-    super(http, 'tarjetas-rfid', baseUrl);
-  }
-
-  getByCliente(clienteId: number): Observable<TarjetaRfid[]> {
-    return this.http.get<TarjetaRfid[]>(`${this.baseUrl}/${this.endpoint}/by-cliente/${clienteId}`);
-  }
-
-  getByNumeroTag(numeroTag: string): Observable<TarjetaRfid> {
-    return this.http.get<TarjetaRfid>(`${this.baseUrl}/${this.endpoint}/by-tag/${numeroTag}`);
-  }
-
-  recargarSaldo(id: number, monto: number): Observable<TarjetaRfid> {
-    return this.http.patch<TarjetaRfid>(`${this.baseUrl}/${this.endpoint}/${id}/recargar`, { monto });
-  }
-}
-
-@Injectable({
-  providedIn: 'root'
-})
 export class UsuariosService extends BaseApiService<Usuario> {
   constructor(http: HttpClient, @Inject(API_BASE_URL) baseUrl: string) {
-    super(http, 'usuarios', baseUrl);
+    super(http, 'Usuarios', baseUrl);
   }
 
   getByUsername(username: string): Observable<Usuario> {
