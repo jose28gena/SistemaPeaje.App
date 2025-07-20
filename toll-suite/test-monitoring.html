@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Monitoreo PLCs</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .coil { margin: 10px 0; padding: 10px; border: 1px solid #ddd; }
+        .coil.active { background-color: #e8f5e8; border-color: #4caf50; }
+        .coil.alarm { background-color: #fff3e0; border-color: #ff9800; }
+        .station { margin: 20px 0; padding: 15px; border: 2px solid #ccc; }
+        button { margin: 10px 0; padding: 10px 20px; }
+        pre { background: #f5f5f5; padding: 10px; overflow: auto; max-height: 300px; }
+    </style>
+</head>
+<body>
+    <h1>Test Monitoreo de Estados PLC</h1>
+    
+    <button onclick="loadData()">Cargar Datos</button>
+    <button onclick="autoRefresh()">Auto Refresh</button>
+    <button onclick="clearData()">Limpiar</button>
+    
+    <div id="status"></div>
+    <div id="data"></div>
+    <div id="rawData">
+        <h3>Datos Raw:</h3>
+        <pre id="jsonOutput"></pre>
+    </div>
+
+    <script>
+        let refreshInterval = null;
+        
+        async function loadData() {
+            const statusDiv = document.getElementById('status');
+            const dataDiv = document.getElementById('data');
+            const jsonOutput = document.getElementById('jsonOutput');
+            
+            statusDiv.innerHTML = 'Cargando...';
+            
+            try {
+                const response = await fetch('https://localhost:51393/api/PlcConfiguracion/monitoring', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                jsonOutput.textContent = JSON.stringify(data, null, 2);
+                
+                // Mostrar datos procesados
+                displayStations(data);
+                
+                statusDiv.innerHTML = `✅ Datos cargados exitosamente (${new Date().toLocaleTimeString()})`;
+                
+            } catch (error) {
+                statusDiv.innerHTML = `❌ Error: ${error.message}`;
+                console.error('Error:', error);
+            }
+        }
+        
+        function displayStations(stations) {
+            const dataDiv = document.getElementById('data');
+            
+            if (!stations || stations.length === 0) {
+                dataDiv.innerHTML = '<p>No hay estaciones disponibles</p>';
+                return;
+            }
+            
+            let html = '<h2>Estaciones PLC:</h2>';
+            
+            stations.forEach(station => {
+                const activeCoils = station.coilsConfiguracion?.filter(c => c.estadoActual).length || 0;
+                const alarmCoils = station.coilsConfiguracion?.filter(c => c.esAlarma && c.estadoActual).length || 0;
+                
+                html += `
+                    <div class="station">
+                        <h3>${station.nombre} (${station.ip}:${station.puerto})</h3>
+                        <p><strong>Estado:</strong> ${station.estaConectado ? 'Conectado' : 'Desconectado'}</p>
+                        <p><strong>Worker:</strong> ${station.estadoWorker}</p>
+                        <p><strong>Coils Activos:</strong> ${activeCoils}/${station.coilsConfiguracion?.length || 0}</p>
+                        <p><strong>Alarmas:</strong> ${alarmCoils}</p>
+                        
+                        <h4>Estados de Coils:</h4>
+                `;
+                
+                if (station.coilsConfiguracion && station.coilsConfiguracion.length > 0) {
+                    station.coilsConfiguracion.forEach(coil => {
+                        const cssClass = coil.estadoActual ? (coil.esAlarma ? 'coil active alarm' : 'coil active') : 'coil';
+                        const estado = coil.estadoActual ? 'ACTIVO' : 'INACTIVO';
+                        const alarmaText = coil.esAlarma ? ' 🚨' : '';
+                        const lastUpdate = coil.ultimaActualizacion ? new Date(coil.ultimaActualizacion).toLocaleString() : 'N/A';
+                        
+                        html += `
+                            <div class="${cssClass}">
+                                <strong>${coil.nombre}</strong> - ${estado}${alarmaText}
+                                <br><small>Dirección: ${coil.direccion} | Última act.: ${lastUpdate}</small>
+                            </div>
+                        `;
+                    });
+                } else {
+                    html += '<p>No hay coils configurados</p>';
+                }
+                
+                html += '</div>';
+            });
+            
+            dataDiv.innerHTML = html;
+        }
+        
+        function autoRefresh() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+                refreshInterval = null;
+                document.querySelector('button[onclick="autoRefresh()"]').textContent = 'Auto Refresh';
+            } else {
+                refreshInterval = setInterval(loadData, 5000);
+                document.querySelector('button[onclick="autoRefresh()"]').textContent = 'Stop Refresh';
+                loadData(); // Cargar inmediatamente
+            }
+        }
+        
+        function clearData() {
+            document.getElementById('data').innerHTML = '';
+            document.getElementById('jsonOutput').textContent = '';
+            document.getElementById('status').innerHTML = '';
+        }
+        
+        // Cargar datos automáticamente al cargar la página
+        window.onload = () => {
+            loadData();
+        };
+    </script>
+</body>
+</html>

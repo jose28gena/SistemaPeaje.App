@@ -21,6 +21,7 @@ import { Component } from '@angular/core';
           <nav class="nav-menu">
             <h2>Panel de Control</h2>
             <ul>
+              <li><a routerLink="/admin/station-monitoring" routerLinkActive="active">Monitoreo de Estaciones</a></li>
               <li><a routerLink="/admin/test" routerLinkActive="active">Dashboard</a></li>
               <li><a routerLink="/admin/estaciones" routerLinkActive="active">Estaciones</a></li>
               <li><a routerLink="/admin/carriles" routerLinkActive="active">Carriles</a></li>

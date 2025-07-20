@@ -19,7 +19,8 @@ const routes: Routes = [
     path: '',
     component: AdminLayoutComponent,
     children: [
-      { path: '', redirectTo: 'test', pathMatch: 'full' },
+      { path: '', redirectTo: 'station-monitoring', pathMatch: 'full' },
+      { path: 'station-monitoring', loadChildren: () => import('./components/station-monitoring.module').then(m => m.StationMonitoringModule) },
       { path: 'test', component: TestComponent },
       { path: 'estaciones', component: EstacionesComponent },
       { path: 'carriles', component: CarrilesComponent },
