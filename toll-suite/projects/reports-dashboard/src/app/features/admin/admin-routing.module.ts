@@ -31,7 +31,8 @@ const routes: Routes = [
       { path: 'clientes', component: ClientesComponent },
       { path: 'empleados', component: EmpleadosComponent },
       { path: 'tarjetas-rfid', component: TarjetasRfidComponent },
-      { path: 'usuarios', component: UsuariosComponent }
+      { path: 'usuarios', component: UsuariosComponent },
+      { path: 'turnos', loadChildren: () => import('./pages/turnos/turnos.module').then(m => m.TurnosModule) }
     ]
   }
 ];

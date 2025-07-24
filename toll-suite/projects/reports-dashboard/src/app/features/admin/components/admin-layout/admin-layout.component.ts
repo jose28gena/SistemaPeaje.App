@@ -23,6 +23,7 @@ import { Component } from '@angular/core';
             <ul>
               <li><a routerLink="/admin/station-monitoring" routerLinkActive="active">Monitoreo de Estaciones</a></li>
               <li><a routerLink="/admin/test" routerLinkActive="active">Dashboard</a></li>
+              <li><a routerLink="/admin/turnos" routerLinkActive="active">Gestión de Turnos</a></li>
               <li><a routerLink="/admin/estaciones" routerLinkActive="active">Estaciones</a></li>
               <li><a routerLink="/admin/carriles" routerLinkActive="active">Carriles</a></li>
               <li><a routerLink="/admin/empleados" routerLinkActive="active">Empleados</a></li>

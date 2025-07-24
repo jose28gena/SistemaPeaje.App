@@ -1,0 +1,502 @@
+.dashboard-turnos {
+  padding: 20px;
+  background-color: #f5f6fa;
+  min-height: 100vh;
+
+  // Header con métricas principales
+  .header-metricas {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+
+    .metrica-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      transition: transform 0.2s, box-shadow 0.2s;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+      }
+
+      &.warning {
+        border-left: 4px solid #ff9800;
+        
+        .icon {
+          color: #ff9800;
+        }
+      }
+
+      .icon {
+        font-size: 2.5rem;
+        margin-right: 15px;
+        
+        &.activos .icon { color: #4caf50; }
+        &.empleados .icon { color: #2196f3; }
+        &.programados .icon { color: #9c27b0; }
+        &.alertas .icon { color: #ff5722; }
+      }
+
+      .content {
+        h3 {
+          margin: 0;
+          font-size: 2.2rem;
+          font-weight: 700;
+          color: #2c3e50;
+        }
+
+        p {
+          margin: 5px 0 0;
+          color: #7f8c8d;
+          font-size: 0.9rem;
+          font-weight: 500;
+        }
+      }
+    }
+  }
+
+  // Grid principal del dashboard
+  .dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto;
+    gap: 25px;
+    margin-bottom: 30px;
+
+    @media (max-width: 1200px) {
+      grid-template-columns: 1fr;
+    }
+
+    .panel {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+      overflow: hidden;
+
+      .panel-header {
+        padding: 20px 25px 15px;
+        border-bottom: 1px solid #e0e6ed;
+        display: flex;
+        justify-content: between;
+        align-items: center;
+
+        h3 {
+          margin: 0;
+          font-size: 1.3rem;
+          font-weight: 600;
+          color: #2c3e50;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .badge {
+          background: #3498db;
+          color: white;
+          padding: 4px 10px;
+          border-radius: 20px;
+          font-size: 0.8rem;
+          font-weight: 600;
+        }
+
+        .btn-link {
+          background: none;
+          border: none;
+          color: #3498db;
+          cursor: pointer;
+          font-size: 0.9rem;
+          text-decoration: underline;
+
+          &:hover {
+            color: #2980b9;
+          }
+        }
+
+        .fecha {
+          color: #7f8c8d;
+          font-size: 0.9rem;
+          font-weight: 500;
+        }
+
+        select {
+          padding: 8px 12px;
+          border: 1px solid #ddd;
+          border-radius: 6px;
+          font-size: 0.9rem;
+        }
+      }
+
+      .panel-content {
+        padding: 20px 25px;
+        max-height: 400px;
+        overflow-y: auto;
+
+        &::-webkit-scrollbar {
+          width: 6px;
+        }
+
+        &::-webkit-scrollbar-track {
+          background: #f1f1f1;
+        }
+
+        &::-webkit-scrollbar-thumb {
+          background: #c1c1c1;
+          border-radius: 3px;
+        }
+      }
+    }
+
+    // Panel de turnos activos
+    .turnos-activos {
+      .turno-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px 0;
+        border-bottom: 1px solid #f0f0f0;
+
+        &:last-child {
+          border-bottom: none;
+        }
+
+        .turno-info {
+          flex: 1;
+
+          .empleado {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 8px;
+
+            strong {
+              color: #2c3e50;
+              font-weight: 600;
+            }
+
+            .estacion {
+              color: #7f8c8d;
+              font-size: 0.85rem;
+            }
+          }
+
+          .tiempo {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+
+            .duracion {
+              font-family: 'Courier New', monospace;
+              font-weight: 600;
+              color: #2c3e50;
+            }
+
+            .estado {
+              padding: 3px 8px;
+              border-radius: 12px;
+              font-size: 0.75rem;
+              font-weight: 600;
+
+              &.success { background: #d4edda; color: #155724; }
+              &.warning { background: #fff3cd; color: #856404; }
+              &.danger { background: #f8d7da; color: #721c24; }
+              &.secondary { background: #e2e3e5; color: #383d41; }
+            }
+          }
+        }
+
+        .turno-acciones {
+          display: flex;
+          gap: 5px;
+        }
+      }
+    }
+
+    // Panel de alertas
+    .alertas-panel {
+      .alerta-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        padding: 15px 0;
+        border-bottom: 1px solid #f0f0f0;
+
+        &:last-child {
+          border-bottom: none;
+        }
+
+        .alerta-info {
+          display: flex;
+          gap: 12px;
+          flex: 1;
+
+          .severity {
+            font-size: 1.2rem;
+            margin-top: 2px;
+
+            &.informativa { color: #17a2b8; }
+            &.advertencia { color: #ffc107; }
+            &.error { color: #dc3545; }
+            &.critica { color: #e74c3c; }
+          }
+
+          .content {
+            h4 {
+              margin: 0 0 5px;
+              font-size: 0.95rem;
+              font-weight: 600;
+              color: #2c3e50;
+            }
+
+            p {
+              margin: 0 0 5px;
+              font-size: 0.85rem;
+              color: #5a6c7d;
+              line-height: 1.4;
+            }
+
+            small {
+              color: #95a5a6;
+              font-size: 0.75rem;
+            }
+          }
+        }
+      }
+    }
+
+    // Panel de estadísticas
+    .estadisticas-dia {
+      .estadistica-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 15px;
+
+        .stat-item {
+          text-align: center;
+          padding: 15px 10px;
+          background: #f8f9fc;
+          border-radius: 8px;
+
+          .value {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 5px;
+          }
+
+          .label {
+            font-size: 0.8rem;
+            color: #7f8c8d;
+            font-weight: 500;
+          }
+        }
+      }
+    }
+
+    // Panel de estado por estación
+    .estaciones-estado {
+      .estacion-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px 0;
+        border-bottom: 1px solid #f0f0f0;
+
+        &:last-child {
+          border-bottom: none;
+        }
+
+        .estacion-info {
+          .nombre {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 5px;
+          }
+
+          .estado {
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+
+            &.success { background: #d4edda; color: #155724; }
+            &.warning { background: #fff3cd; color: #856404; }
+            &.info { background: #d1ecf1; color: #0c5460; }
+            &.danger { background: #f8d7da; color: #721c24; }
+          }
+        }
+
+        .estacion-metricas {
+          text-align: right;
+
+          .turnos-count {
+            display: block;
+            font-size: 0.85rem;
+            color: #7f8c8d;
+            margin-bottom: 8px;
+          }
+
+          .mini-turnos {
+            display: flex;
+            gap: 4px;
+            justify-content: flex-end;
+
+            .mini-turno {
+              width: 28px;
+              height: 28px;
+              background: #3498db;
+              color: white;
+              border-radius: 50%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 0.7rem;
+              font-weight: 600;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Botones comunes
+  .btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: all 0.2s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    &.primary {
+      background: #3498db;
+      color: white;
+
+      &:hover {
+        background: #2980b9;
+      }
+    }
+
+    &.secondary {
+      background: #95a5a6;
+      color: white;
+
+      &:hover {
+        background: #7f8c8d;
+      }
+    }
+
+    &.warning {
+      background: #f39c12;
+      color: white;
+
+      &:hover {
+        background: #e67e22;
+      }
+    }
+
+    &.btn-sm {
+      padding: 6px 10px;
+      font-size: 0.8rem;
+      border-radius: 4px;
+    }
+  }
+
+  // Acciones rápidas
+  .acciones-rapidas {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-bottom: 20px;
+
+    @media (max-width: 768px) {
+      flex-direction: column;
+      align-items: center;
+    }
+  }
+
+  // Estado vacío
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #7f8c8d;
+
+    p {
+      margin: 0;
+      font-size: 0.9rem;
+    }
+  }
+
+  // Indicador de actualización
+  .update-indicator {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #2c3e50;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid #3498db;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+  }
+
+  // Animaciones
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  // Responsive
+  @media (max-width: 768px) {
+    padding: 15px;
+
+    .header-metricas {
+      grid-template-columns: 1fr;
+      gap: 15px;
+    }
+
+    .dashboard-grid {
+      gap: 20px;
+    }
+
+    .panel {
+      .panel-header {
+        padding: 15px 20px 10px;
+
+        h3 {
+          font-size: 1.1rem;
+        }
+      }
+
+      .panel-content {
+        padding: 15px 20px;
+      }
+    }
+  }
+}
