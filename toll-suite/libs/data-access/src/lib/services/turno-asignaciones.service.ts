@@ -16,7 +16,7 @@ export class TurnoAsignacionesService extends BaseApiService<TurnoAsignacion> {
     http: HttpClient,
     @Inject(API_BASE_URL) baseUrl: string
   ) {
-    super(http, 'api/TurnoAsignaciones', baseUrl);
+    super(http, 'turnos-admin/turno-asignaciones', baseUrl);
   }
 
   asignarTurno(data: AsignarTurnoDto): Observable<TurnoAsignacion> {

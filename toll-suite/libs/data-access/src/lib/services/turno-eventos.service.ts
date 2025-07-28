@@ -16,7 +16,7 @@ export class TurnoEventosService extends BaseApiService<TurnoEvento> {
     http: HttpClient,
     @Inject(API_BASE_URL) baseUrl: string
   ) {
-    super(http, 'api/TurnoEventos', baseUrl);
+    super(http, 'turnos-admin/turno-eventos', baseUrl);
   }
 
   registrarEvento(turnoId: number, evento: RegistrarEventoTurnoDto): Observable<TurnoEvento> {

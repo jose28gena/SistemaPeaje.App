@@ -19,12 +19,12 @@ export class TurnosService extends BaseApiService<Turno> {
     http: HttpClient,
     @Inject(API_BASE_URL) baseUrl: string
   ) {
-    super(http, 'api/TurnosAdmin', baseUrl);
+    super(http, 'Turnos', baseUrl);
   }
 
   // Métodos específicos para turnos
   createTurno(turno: CreateTurnoDto): Observable<Turno> {
-    return this.http.post<Turno>(`${this.baseUrl}/${this.endpoint}`, turno);
+    return this.http.post<Turno>(`${this.baseUrl}/${this.endpoint}/abrir`, turno);
   }
 
   getTurnosPorEmpleado(empleadoId: number, fechaInicio?: Date, fechaFin?: Date): Observable<Turno[]> {
@@ -52,7 +52,7 @@ export class TurnosService extends BaseApiService<Turno> {
   }
 
   finalizarTurno(id: number, data: FinalizarTurnoDto): Observable<Turno> {
-    return this.http.patch<Turno>(`${this.baseUrl}/${this.endpoint}/${id}/finalizar`, data);
+    return this.http.post<Turno>(`${this.baseUrl}/${this.endpoint}/${id}/cerrar`, data);
   }
 
   cancelarTurno(id: number, motivo: string): Observable<Turno> {

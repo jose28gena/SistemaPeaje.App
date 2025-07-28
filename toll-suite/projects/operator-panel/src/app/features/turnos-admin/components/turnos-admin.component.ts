@@ -8,7 +8,6 @@ import { Component } from '@angular/core';
         <h2>Administración de Turnos</h2>
         <ul class="nav-links">
           <li><a routerLink="dashboard" routerLinkActive="active">Dashboard</a></li>
-          <li><a routerLink="operaciones" routerLinkActive="active">Operaciones</a></li>
           <li><a routerLink="templates" routerLinkActive="active">Plantillas</a></li>
           <li><a routerLink="asignaciones" routerLinkActive="active">Asignaciones</a></li>
           <li><a routerLink="eventos" routerLinkActive="active">Eventos</a></li>

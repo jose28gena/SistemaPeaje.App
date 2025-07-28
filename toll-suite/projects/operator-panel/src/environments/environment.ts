@@ -1,6 +1,6 @@
 export const environment = {
   production: false,
-  apiUrl: 'http://localhost:3000/api',
+  apiUrl: 'http://localhost:51394/api',
   tollStationId: 'TS001',
   features: {
     enableRealTimeMonitoring: true,

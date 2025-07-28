@@ -9,7 +9,6 @@ import { TurnoTemplatesComponent } from './components/turno-templates/turno-temp
 import { TurnosDashboardComponent } from './components/turnos-dashboard/turnos-dashboard.component';
 import { TurnoAsignacionesComponent } from './components/turno-asignaciones/turno-asignaciones.component';
 import { TurnoEventosComponent } from './components/turno-eventos/turno-eventos.component';
-import { TurnoOperacionesComponent } from './components/turno-operaciones/turno-operaciones.component';
 
 const routes: Routes = [
   {
@@ -20,8 +19,7 @@ const routes: Routes = [
       { path: 'dashboard', component: TurnosDashboardComponent },
       { path: 'templates', component: TurnoTemplatesComponent },
       { path: 'asignaciones', component: TurnoAsignacionesComponent },
-      { path: 'eventos', component: TurnoEventosComponent },
-      { path: 'operaciones', component: TurnoOperacionesComponent }
+      { path: 'eventos', component: TurnoEventosComponent }
     ]
   }
 ];
@@ -32,8 +30,7 @@ const routes: Routes = [
     TurnoTemplatesComponent,
     TurnosDashboardComponent,
     TurnoAsignacionesComponent,
-    TurnoEventosComponent,
-    TurnoOperacionesComponent
+    TurnoEventosComponent
   ],
   imports: [
     CommonModule,

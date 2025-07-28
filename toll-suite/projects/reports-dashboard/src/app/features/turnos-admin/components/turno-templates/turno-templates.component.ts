@@ -1,450 +1,366 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { TurnoTemplatesService, TurnoTemplate, CreateTurnoTemplateDto, UpdateTurnoTemplateDto } from '@toll-suite/data-access';
+
+interface TurnoTemplate {
+  id: number;
+  nombre: string;
+  descripcion: string;
+  horarioInicio: string;
+  horarioFin: string;
+  montoInicial: number;
+  esActivo: boolean;
+  duracionHoras: number;
+}
 
 @Component({
-  selector: 'op-turno-templates',
+  selector: 'app-turno-templates',
   template: `
-    <div class="templates-container">
-      <div class="header">
-        <h1>Plantillas de Turnos</h1>
-        <button class="btn btn-primary" (click)="showCreateForm = true">
-          Crear Nueva Plantilla
-        </button>
-      </div>
-
-      <!-- Formulario de creación/edición -->
-      <div class="form-section" *ngIf="showCreateForm || editingTemplate">
-        <h2>{{ editingTemplate ? 'Editar' : 'Crear' }} Plantilla</h2>
-        <form [formGroup]="templateForm" (ngSubmit)="onSubmit()">
-          <div class="form-grid">
-            <div class="form-group">
-              <label for="nombre">Nombre *</label>
-              <input id="nombre" type="text" formControlName="nombre" class="form-control">
-              <div class="error" *ngIf="templateForm.get('nombre')?.invalid && templateForm.get('nombre')?.touched">
-                El nombre es requerido
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label for="descripcion">Descripción</label>
-              <textarea id="descripcion" formControlName="descripcion" class="form-control" rows="3"></textarea>
-            </div>
-
-            <div class="form-group">
-              <label for="horaInicio">Hora Inicio *</label>
-              <input id="horaInicio" type="time" formControlName="horaInicio" class="form-control">
-            </div>
-
-            <div class="form-group">
-              <label for="horaFin">Hora Fin *</label>
-              <input id="horaFin" type="time" formControlName="horaFin" class="form-control">
-            </div>
-
-            <div class="form-group">
-              <label for="factorHoraExtra">Factor Hora Extra</label>
-              <input id="factorHoraExtra" type="number" step="0.1" formControlName="factorHoraExtra" class="form-control">
-            </div>
-
-            <div class="form-group">
-              <label for="diasSemana">Días de la Semana</label>
-              <div class="checkbox-group">
-                <label><input type="checkbox" value="Lunes" (change)="onDayChange($event)"> Lunes</label>
-                <label><input type="checkbox" value="Martes" (change)="onDayChange($event)"> Martes</label>
-                <label><input type="checkbox" value="Miércoles" (change)="onDayChange($event)"> Miércoles</label>
-                <label><input type="checkbox" value="Jueves" (change)="onDayChange($event)"> Jueves</label>
-                <label><input type="checkbox" value="Viernes" (change)="onDayChange($event)"> Viernes</label>
-                <label><input type="checkbox" value="Sábado" (change)="onDayChange($event)"> Sábado</label>
-                <label><input type="checkbox" value="Domingo" (change)="onDayChange($event)"> Domingo</label>
-              </div>
-            </div>
-
-            <div class="form-group checkbox-group">
-              <label>
-                <input type="checkbox" formControlName="esTurnoNocturno">
-                Turno Nocturno
-              </label>
-            </div>
-
-            <div class="form-group checkbox-group">
-              <label>
-                <input type="checkbox" formControlName="esRotativo">
-                Turno Rotativo
-              </label>
-            </div>
-          </div>
-
-          <div class="form-actions">
-            <button type="submit" class="btn btn-primary" [disabled]="templateForm.invalid">
-              {{ editingTemplate ? 'Actualizar' : 'Crear' }}
-            </button>
-            <button type="button" class="btn btn-secondary" (click)="cancelEdit()">
-              Cancelar
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-12">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+              <i class="fas fa-clipboard-list me-2"></i>
+              Plantillas de Turnos
+            </h2>
+            <button class="btn btn-primary" (click)="abrirModalCrear()">
+              <i class="fas fa-plus me-2"></i>
+              Nueva Plantilla
             </button>
           </div>
-        </form>
-      </div>
-
-      <!-- Lista de plantillas -->
-      <div class="templates-list">
-        <div class="search-bar">
-          <input type="text" placeholder="Buscar plantillas..." [(ngModel)]="searchTerm" 
-                 (input)="filterTemplates()" class="form-control">
         </div>
+      </div>
 
-        <div class="templates-grid">
-          <div class="template-card" *ngFor="let template of filteredTemplates">
-            <div class="template-header">
-              <h3>{{ template.nombre }}</h3>
-              <div class="template-actions">
-                <button class="btn btn-sm btn-info" (click)="editTemplate(template)">
-                  Editar
-                </button>
-                <button class="btn btn-sm btn-success" (click)="duplicateTemplate(template)">
-                  Duplicar
-                </button>
-                <button class="btn btn-sm" 
-                        [ngClass]="template.activo ? 'btn-warning' : 'btn-success'"
-                        (click)="toggleTemplate(template)">
-                  {{ template.activo ? 'Desactivar' : 'Activar' }}
-                </button>
+      <!-- Lista de Plantillas -->
+      <div class="row">
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header">
+              <h5 class="mb-0">Plantillas Existentes</h5>
+            </div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="table table-hover">
+                  <thead>
+                    <tr>
+                      <th>Nombre</th>
+                      <th>Horario</th>
+                      <th>Duración</th>
+                      <th>Monto Inicial</th>
+                      <th>Estado</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let template of templates">
+                      <td>
+                        <strong>{{ template.nombre }}</strong>
+                        <br>
+                        <small class="text-muted">{{ template.descripcion }}</small>
+                      </td>
+                      <td>
+                        <i class="fas fa-clock me-1"></i>
+                        {{ template.horarioInicio }} - {{ template.horarioFin }}
+                      </td>
+                      <td>
+                        <span class="badge bg-info">
+                          {{ template.duracionHoras }}h
+                        </span>
+                      </td>
+                      <td>
+                        <i class="fas fa-dollar-sign me-1"></i>
+                        {{ template.montoInicial | number:'1.2-2' }}
+                      </td>
+                      <td>
+                        <span class="badge" [ngClass]="template.esActivo ? 'bg-success' : 'bg-secondary'">
+                          {{ template.esActivo ? 'Activo' : 'Inactivo' }}
+                        </span>
+                      </td>
+                      <td>
+                        <div class="btn-group btn-group-sm">
+                          <button class="btn btn-outline-primary" (click)="editarTemplate(template)">
+                            <i class="fas fa-edit"></i>
+                          </button>
+                          <button class="btn btn-outline-warning" (click)="toggleEstado(template)">
+                            <i class="fas" [ngClass]="template.esActivo ? 'fa-pause' : 'fa-play'"></i>
+                          </button>
+                          <button class="btn btn-outline-danger" (click)="eliminarTemplate(template)">
+                            <i class="fas fa-trash"></i>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+                
+                <div *ngIf="templates.length === 0" class="text-center py-4">
+                  <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                  <h5 class="text-muted">No hay plantillas</h5>
+                  <p class="text-muted">Crea tu primera plantilla de turno</p>
+                </div>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
 
-            <div class="template-details">
-              <p><strong>Horario:</strong> {{ template.horaInicio }} - {{ template.horaFin }}</p>
-              <p><strong>Duración:</strong> {{ template.duracionPlanificada }} horas</p>
-              <p><strong>Días:</strong> {{ template.diasSemana }}</p>
-              <p *ngIf="template.descripcion"><strong>Descripción:</strong> {{ template.descripcion }}</p>
-              
-              <div class="template-badges">
-                <span class="badge" *ngIf="template.esTurnoNocturno">Nocturno</span>
-                <span class="badge" *ngIf="template.esRotativo">Rotativo</span>
-                <span class="badge" [ngClass]="template.activo ? 'badge-success' : 'badge-danger'">
-                  {{ template.activo ? 'Activo' : 'Inactivo' }}
-                </span>
-              </div>
+      <!-- Modal Crear/Editar -->
+      <div class="modal fade" id="templateModal" tabindex="-1">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">
+                {{ modoEdicion ? 'Editar' : 'Crear' }} Plantilla
+              </h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
+            <form [formGroup]="templateForm" (ngSubmit)="guardarTemplate()">
+              <div class="modal-body">
+                <div class="mb-3">
+                  <label class="form-label">Nombre *</label>
+                  <input type="text" class="form-control" formControlName="nombre" placeholder="Ej: Turno Mañana">
+                  <div class="invalid-feedback" *ngIf="templateForm.get('nombre')?.invalid && templateForm.get('nombre')?.touched">
+                    El nombre es requerido
+                  </div>
+                </div>
+                
+                <div class="mb-3">
+                  <label class="form-label">Descripción</label>
+                  <textarea class="form-control" formControlName="descripcion" rows="3" placeholder="Descripción del turno"></textarea>
+                </div>
+                
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      <label class="form-label">Horario Inicio *</label>
+                      <input type="time" class="form-control" formControlName="horarioInicio">
+                      <div class="invalid-feedback" *ngIf="templateForm.get('horarioInicio')?.invalid && templateForm.get('horarioInicio')?.touched">
+                        El horario de inicio es requerido
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      <label class="form-label">Horario Fin *</label>
+                      <input type="time" class="form-control" formControlName="horarioFin">
+                      <div class="invalid-feedback" *ngIf="templateForm.get('horarioFin')?.invalid && templateForm.get('horarioFin')?.touched">
+                        El horario de fin es requerido
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="mb-3">
+                  <label class="form-label">Monto Inicial *</label>
+                  <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input type="number" class="form-control" formControlName="montoInicial" placeholder="0.00" step="0.01">
+                  </div>
+                  <div class="invalid-feedback" *ngIf="templateForm.get('montoInicial')?.invalid && templateForm.get('montoInicial')?.touched">
+                    El monto inicial es requerido
+                  </div>
+                </div>
+                
+                <div class="mb-3">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" formControlName="esActivo" id="esActivo">
+                    <label class="form-check-label" for="esActivo">
+                      Plantilla activa
+                    </label>
+                  </div>
+                </div>
+                
+                <div class="alert alert-info" *ngIf="duracionCalculada">
+                  <i class="fas fa-info-circle me-2"></i>
+                  Duración calculada: {{ duracionCalculada }} horas
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-primary" [disabled]="templateForm.invalid">
+                  {{ modoEdicion ? 'Actualizar' : 'Crear' }}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       </div>
     </div>
   `,
   styles: [`
-    .templates-container {
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 2rem;
-      padding-bottom: 1rem;
-      border-bottom: 2px solid #3498db;
-    }
-
-    .form-section {
-      background: white;
-      padding: 2rem;
-      border-radius: 8px;
+    .card {
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      margin-bottom: 2rem;
     }
-
-    .form-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 1rem;
-      margin-bottom: 2rem;
+    
+    .table td {
+      vertical-align: middle;
     }
-
-    .form-group {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .form-group label {
-      font-weight: bold;
-      margin-bottom: 0.5rem;
-      color: #2c3e50;
-    }
-
-    .form-control {
-      padding: 0.5rem;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      font-size: 1rem;
-    }
-
-    .form-control:focus {
-      outline: none;
-      border-color: #3498db;
-      box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
-    }
-
-    .checkbox-group {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 1rem;
-    }
-
-    .checkbox-group label {
-      display: flex;
-      align-items: center;
-      font-weight: normal;
-      margin-bottom: 0;
-    }
-
-    .checkbox-group input[type="checkbox"] {
-      margin-right: 0.5rem;
-    }
-
-    .error {
-      color: #e74c3c;
-      font-size: 0.9rem;
-      margin-top: 0.25rem;
-    }
-
-    .form-actions {
-      display: flex;
-      gap: 1rem;
-    }
-
-    .search-bar {
-      margin-bottom: 1rem;
-    }
-
-    .templates-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-      gap: 1rem;
-    }
-
-    .template-card {
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      padding: 1.5rem;
-      transition: transform 0.2s ease;
-    }
-
-    .template-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-    }
-
-    .template-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 1rem;
-    }
-
-    .template-header h3 {
-      margin: 0;
-      color: #2c3e50;
-    }
-
-    .template-actions {
-      display: flex;
-      gap: 0.5rem;
-      flex-wrap: wrap;
-    }
-
-    .template-details p {
-      margin: 0.5rem 0;
-      font-size: 0.9rem;
-    }
-
-    .template-badges {
-      margin-top: 1rem;
-      display: flex;
-      gap: 0.5rem;
-      flex-wrap: wrap;
-    }
-
-    .badge {
+    
+    .btn-group-sm .btn {
       padding: 0.25rem 0.5rem;
-      border-radius: 4px;
-      font-size: 0.8rem;
-      font-weight: bold;
-      background: #ecf0f1;
-      color: #2c3e50;
     }
-
-    .badge-success {
-      background: #d4edda;
-      color: #155724;
+    
+    .invalid-feedback {
+      display: block;
     }
-
-    .badge-danger {
-      background: #f8d7da;
-      color: #721c24;
-    }
-
-    .btn {
-      padding: 0.5rem 1rem;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 0.9rem;
-      transition: all 0.3s ease;
-    }
-
-    .btn-sm {
-      padding: 0.25rem 0.5rem;
-      font-size: 0.8rem;
-    }
-
-    .btn-primary { background: #3498db; color: white; }
-    .btn-primary:hover { background: #2980b9; }
-    .btn-primary:disabled { background: #bdc3c7; cursor: not-allowed; }
-
-    .btn-secondary { background: #6c757d; color: white; }
-    .btn-secondary:hover { background: #5a6268; }
-
-    .btn-info { background: #17a2b8; color: white; }
-    .btn-info:hover { background: #138496; }
-
-    .btn-success { background: #27ae60; color: white; }
-    .btn-success:hover { background: #229954; }
-
-    .btn-warning { background: #f39c12; color: white; }
-    .btn-warning:hover { background: #e67e22; }
   `]
 })
 export class TurnoTemplatesComponent implements OnInit {
-  templateForm: FormGroup;
+  
   templates: TurnoTemplate[] = [];
-  filteredTemplates: TurnoTemplate[] = [];
-  showCreateForm = false;
-  editingTemplate: TurnoTemplate | null = null;
-  searchTerm = '';
-  selectedDays: string[] = [];
+  templateForm: FormGroup;
+  modoEdicion = false;
+  templateEnEdicion: TurnoTemplate | null = null;
+  duracionCalculada: number | null = null;
 
-  constructor(
-    private fb: FormBuilder,
-    private templatesService: TurnoTemplatesService
-  ) {
-    this.templateForm = this.createForm();
+  constructor(private fb: FormBuilder) {
+    this.templateForm = this.fb.group({
+      nombre: ['', Validators.required],
+      descripcion: [''],
+      horarioInicio: ['', Validators.required],
+      horarioFin: ['', Validators.required],
+      montoInicial: [0, [Validators.required, Validators.min(0)]],
+      esActivo: [true]
+    });
+    
+    this.loadMockData();
   }
 
   ngOnInit() {
-    this.loadTemplates();
+    // Calcular duración cuando cambien los horarios
+    this.templateForm.get('horarioInicio')?.valueChanges.subscribe(() => this.calcularDuracion());
+    this.templateForm.get('horarioFin')?.valueChanges.subscribe(() => this.calcularDuracion());
   }
 
-  createForm(): FormGroup {
-    return this.fb.group({
-      nombre: ['', Validators.required],
-      descripcion: [''],
-      horaInicio: ['', Validators.required],
-      horaFin: ['', Validators.required],
-      factorHoraExtra: [1.5, [Validators.required, Validators.min(1)]],
-      esTurnoNocturno: [false],
-      esRotativo: [false]
-    });
-  }
-
-  loadTemplates() {
-    this.templatesService.getAll().subscribe({
-      next: (response) => {
-        this.templates = response.data;
-        this.filteredTemplates = [...this.templates];
+  private loadMockData() {
+    this.templates = [
+      {
+        id: 1,
+        nombre: 'Turno Mañana',
+        descripcion: 'Turno matutino estándar',
+        horarioInicio: '06:00',
+        horarioFin: '14:00',
+        montoInicial: 500,
+        esActivo: true,
+        duracionHoras: 8
       },
-      error: (error) => {
-        console.error('Error al cargar plantillas:', error);
+      {
+        id: 2,
+        nombre: 'Turno Tarde',
+        descripcion: 'Turno vespertino estándar',
+        horarioInicio: '14:00',
+        horarioFin: '22:00',
+        montoInicial: 300,
+        esActivo: true,
+        duracionHoras: 8
+      },
+      {
+        id: 3,
+        nombre: 'Turno Noche',
+        descripcion: 'Turno nocturno',
+        horarioInicio: '22:00',
+        horarioFin: '06:00',
+        montoInicial: 200,
+        esActivo: false,
+        duracionHoras: 8
       }
-    });
+    ];
   }
 
-  onSubmit() {
-    if (this.templateForm.valid) {
-      const formValue = {
-        ...this.templateForm.value,
-        diasSemana: this.selectedDays.join(',')
-      };
-
-      if (this.editingTemplate) {
-        this.templatesService.updateTemplate(this.editingTemplate.id, formValue).subscribe({
-          next: () => {
-            this.loadTemplates();
-            this.cancelEdit();
-          },
-          error: (error) => console.error('Error al actualizar plantilla:', error)
-        });
-      } else {
-        this.templatesService.createTemplate(formValue).subscribe({
-          next: () => {
-            this.loadTemplates();
-            this.cancelEdit();
-          },
-          error: (error) => console.error('Error al crear plantilla:', error)
-        });
-      }
+  abrirModalCrear() {
+    this.modoEdicion = false;
+    this.templateEnEdicion = null;
+    this.templateForm.reset({
+      nombre: '',
+      descripcion: '',
+      horarioInicio: '',
+      horarioFin: '',
+      montoInicial: 0,
+      esActivo: true
+    });
+    // Abrir modal usando Bootstrap
+    const modal = document.getElementById('templateModal');
+    if (modal) {
+      const bsModal = new (window as any).bootstrap.Modal(modal);
+      bsModal.show();
     }
   }
 
-  editTemplate(template: TurnoTemplate) {
-    this.editingTemplate = template;
-    this.showCreateForm = true;
-    this.selectedDays = template.diasSemana ? template.diasSemana.split(',') : [];
+  editarTemplate(template: TurnoTemplate) {
+    this.modoEdicion = true;
+    this.templateEnEdicion = template;
+    this.templateForm.patchValue(template);
+    this.calcularDuracion();
     
-    this.templateForm.patchValue({
-      nombre: template.nombre,
-      descripcion: template.descripcion,
-      horaInicio: template.horaInicio,
-      horaFin: template.horaFin,
-      factorHoraExtra: template.factorHoraExtra,
-      esTurnoNocturno: template.esTurnoNocturno,
-      esRotativo: template.esRotativo
-    });
-  }
-
-  duplicateTemplate(template: TurnoTemplate) {
-    const newName = prompt('Nombre para la plantilla duplicada:', `${template.nombre} - Copia`);
-    if (newName) {
-      this.templatesService.duplicateTemplate(template.id, newName).subscribe({
-        next: () => this.loadTemplates(),
-        error: (error) => console.error('Error al duplicar plantilla:', error)
-      });
+    const modal = document.getElementById('templateModal');
+    if (modal) {
+      const bsModal = new (window as any).bootstrap.Modal(modal);
+      bsModal.show();
     }
   }
 
-  toggleTemplate(template: TurnoTemplate) {
-    const updateData: UpdateTurnoTemplateDto = { activo: !template.activo };
-    this.templatesService.updateTemplate(template.id, updateData).subscribe({
-      next: () => this.loadTemplates(),
-      error: (error) => console.error('Error al cambiar estado:', error)
-    });
-  }
+  guardarTemplate() {
+    if (this.templateForm.invalid) return;
 
-  cancelEdit() {
-    this.showCreateForm = false;
-    this.editingTemplate = null;
-    this.templateForm.reset();
-    this.selectedDays = [];
-    this.templateForm = this.createForm();
-  }
+    const formData = this.templateForm.value;
+    formData.duracionHoras = this.duracionCalculada || 0;
 
-  onDayChange(event: any) {
-    const day = event.target.value;
-    if (event.target.checked) {
-      this.selectedDays.push(day);
+    if (this.modoEdicion && this.templateEnEdicion) {
+      // Actualizar template existente
+      const index = this.templates.findIndex(t => t.id === this.templateEnEdicion!.id);
+      if (index !== -1) {
+        this.templates[index] = { ...this.templateEnEdicion, ...formData };
+      }
     } else {
-      this.selectedDays = this.selectedDays.filter(d => d !== day);
+      // Crear nuevo template
+      const nuevoTemplate: TurnoTemplate = {
+        id: Date.now(), // ID temporal
+        ...formData
+      };
+      this.templates.push(nuevoTemplate);
+    }
+
+    // Cerrar modal
+    const modal = document.getElementById('templateModal');
+    if (modal) {
+      const bsModal = (window as any).bootstrap.Modal.getInstance(modal);
+      bsModal?.hide();
     }
   }
 
-  filterTemplates() {
-    if (!this.searchTerm) {
-      this.filteredTemplates = [...this.templates];
+  toggleEstado(template: TurnoTemplate) {
+    template.esActivo = !template.esActivo;
+  }
+
+  eliminarTemplate(template: TurnoTemplate) {
+    if (confirm(`¿Estás seguro de eliminar la plantilla "${template.nombre}"?`)) {
+      const index = this.templates.findIndex(t => t.id === template.id);
+      if (index !== -1) {
+        this.templates.splice(index, 1);
+      }
+    }
+  }
+
+  private calcularDuracion() {
+    const inicio = this.templateForm.get('horarioInicio')?.value;
+    const fin = this.templateForm.get('horarioFin')?.value;
+    
+    if (inicio && fin) {
+      const [horaInicio, minutoInicio] = inicio.split(':').map(Number);
+      const [horaFin, minutoFin] = fin.split(':').map(Number);
+      
+      let minutosInicio = horaInicio * 60 + minutoInicio;
+      let minutosFin = horaFin * 60 + minutoFin;
+      
+      // Si el turno cruza medianoche
+      if (minutosFin <= minutosInicio) {
+        minutosFin += 24 * 60;
+      }
+      
+      const diferencia = minutosFin - minutosInicio;
+      this.duracionCalculada = diferencia / 60;
     } else {
-      this.filteredTemplates = this.templates.filter(template =>
-        template.nombre.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-        (template.descripcion && template.descripcion.toLowerCase().includes(this.searchTerm.toLowerCase()))
-      );
+      this.duracionCalculada = null;
     }
   }
 }

@@ -515,6 +515,13 @@ export class TurnosComponent implements OnInit {
   }
 
   clasificarTurnos() {
+    // Validación defensiva para evitar errores si todosLosTurnos está undefined
+    if (!this.todosLosTurnos || !Array.isArray(this.todosLosTurnos)) {
+      console.warn('todosLosTurnos no está inicializado correctamente');
+      this.todosLosTurnos = [];
+      return;
+    }
+
     const hoy = new Date().toDateString();
     
     this.turnosActivos = this.todosLosTurnos.filter(t => 
