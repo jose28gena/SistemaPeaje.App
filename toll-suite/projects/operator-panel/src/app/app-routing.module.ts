@@ -23,6 +23,10 @@ export const routes: Routes = [
     loadChildren: () => import('./features/settings/settings.module').then(m => m.SettingsModule)
   },
   {
+    path: 'tipos-vehiculo',
+    loadChildren: () => import('./features/tipos-vehiculo/tipos-vehiculo.module').then(m => m.TiposVehiculoModule)
+  },
+  {
     path: '**',
     redirectTo: '/operator'
   }

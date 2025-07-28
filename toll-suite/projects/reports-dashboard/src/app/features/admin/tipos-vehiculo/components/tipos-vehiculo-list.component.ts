@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
-import { TiposVehiculoService } from '../../tipos-vehiculo/services/tipos-vehiculo.service';
+import { TiposVehiculoService } from '../services/tipos-vehiculo.service';
 import { 
   TipoVehiculoDto, 
   TipoVehiculoStats, 
@@ -9,10 +9,10 @@ import {
   getCategoriaDisplay,
   getCategoriaColor,
   CreateTipoVehiculoRequest
-} from '../../tipos-vehiculo/models/tipos-vehiculo.models';
+} from '../models/tipos-vehiculo.models';
 
 @Component({
-  selector: 'app-tipos-vehiculo',
+  selector: 'app-tipos-vehiculo-list',
   template: `
     <div class="container">
       <h2>Gestión de Tipos de Vehículo</h2>
@@ -70,7 +70,7 @@ import {
                 </span>
               </td>
               <td>{{ tipo.numeroEjes }}</td>
-              <td>\${{ tipo.tarifaBase | number:'1.0-0' }}</td>
+              <td>\${{ tipo.tarifaBase }}</td>
               <td>
                 <span [class]="tipo.esActivo ? 'status-active' : 'status-inactive'">
                   {{ tipo.esActivo ? 'Activo' : 'Inactivo' }}
@@ -165,7 +165,7 @@ import {
     .btn-secondary:hover { background: #545b62; }
   `]
 })
-export class TiposVehiculoComponent implements OnInit, OnDestroy {
+export class TiposVehiculoListComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   
   tiposVehiculo: TipoVehiculoDto[] = [];

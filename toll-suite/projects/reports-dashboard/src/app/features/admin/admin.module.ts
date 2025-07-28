@@ -22,6 +22,9 @@ import { CarrilFormComponent } from './components/shared/carril-form/carril-form
 // Feature Modules
 import { TarifasModule } from './pages/tarifas/tarifas.module';
 
+// Services
+import { TiposVehiculoService } from './tipos-vehiculo/services/tipos-vehiculo.service';
+
 // Catalog Pages
 import { EstacionesComponent } from './pages/estaciones/estaciones.component';
 import { CarrilesComponent } from './pages/carriles/carriles.component';
@@ -73,7 +76,8 @@ import { TestComponent } from './pages/test/test.component';
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   providers: [
-    { provide: API_BASE_URL, useValue: environment.apiUrl }
+    { provide: API_BASE_URL, useValue: environment.apiUrl },
+    TiposVehiculoService
   ]
 })
 export class AdminModule { }

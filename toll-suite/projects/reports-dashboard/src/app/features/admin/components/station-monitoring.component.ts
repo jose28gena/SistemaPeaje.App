@@ -1,6 +1,11 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { Subscription } from 'rxjs';
-import { StationMonitoringService, StationMonitoringData, StationMonitoringResponse, PlcConfiguration, WorkerStatus } from '../services/station-monitoring.service';
+import { 
+  RealTimeStationMonitoringService, 
+  StationMonitoringData, 
+  StationMonitoringResponse, 
+  MonitoringStats 
+} from '../services/real-time-station-monitoring.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
 interface StationCard {
@@ -31,13 +36,19 @@ interface StationCard {
         </h1>
         
         <div class="header-actions">
+          <div class="connection-status" [ngClass]="'status-' + connectionStatus">
+            <mat-icon>{{ getConnectionIcon() }}</mat-icon>
+            <span>{{ getConnectionText() }}</span>
+          </div>
+          
           <mat-form-field appearance="outline" class="refresh-interval">
-            <mat-label>Actualización (seg)</mat-label>
+            <mat-label>Actualización (ms)</mat-label>
             <mat-select [(value)]="refreshInterval" (selectionChange)="onRefreshIntervalChange()">
-              <mat-option value="2000">2</mat-option>
-              <mat-option value="5000">5</mat-option>
-              <mat-option value="10000">10</mat-option>
-              <mat-option value="30000">30</mat-option>
+              <mat-option value="200">200ms (Ultra Rápido)</mat-option>
+              <mat-option value="500">500ms (Tiempo Real)</mat-option>
+              <mat-option value="1000">1s (Rápido)</mat-option>
+              <mat-option value="2000">2s (Normal)</mat-option>
+              <mat-option value="5000">5s (Lento)</mat-option>
             </mat-select>
           </mat-form-field>
           
@@ -48,24 +59,15 @@ interface StationCard {
         </div>
       </div>
 
-      <div class="status-summary" *ngIf="monitoringData">
+      <div class="status-summary" *ngIf="stats">
         <mat-card class="summary-card connected">
           <mat-card-header>
             <mat-icon>check_circle</mat-icon>
             <span>Conectadas</span>
           </mat-card-header>
           <mat-card-content>
-            <div class="count">{{ getStationsByStatus('connected').length }}</div>
-          </mat-card-content>
-        </mat-card>
-
-        <mat-card class="summary-card disconnected">
-          <mat-card-header>
-            <mat-icon>error</mat-icon>
-            <span>Desconectadas</span>
-          </mat-card-header>
-          <mat-card-content>
-            <div class="count">{{ getStationsByStatus('disconnected').length }}</div>
+            <div class="count">{{ stats.connectedStations }}</div>
+            <div class="total">de {{ stats.totalStations }}</div>
           </mat-card-content>
         </mat-card>
 
@@ -75,24 +77,38 @@ interface StationCard {
             <span>Con Alarmas</span>
           </mat-card-header>
           <mat-card-content>
-            <div class="count">{{ getStationsWithAlarms().length }}</div>
+            <div class="count">{{ stats.stationsWithAlarms }}</div>
           </mat-card-content>
         </mat-card>
 
-        <mat-card class="summary-card total">
+        <mat-card class="summary-card performance">
           <mat-card-header>
-            <mat-icon>devices</mat-icon>
-            <span>Total</span>
+            <mat-icon>speed</mat-icon>
+            <span>Resp. Promedio</span>
           </mat-card-header>
           <mat-card-content>
-            <div class="count">{{ stationCards.length }}</div>
+            <div class="count">{{ stats.averageResponseTime | number:'1.0-0' }}ms</div>
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card class="summary-card errors" *ngIf="stats.totalErrors > 0">
+          <mat-card-header>
+            <mat-icon>error_outline</mat-icon>
+            <span>Errores</span>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="count">{{ stats.totalErrors }}</div>
           </mat-card-content>
         </mat-card>
       </div>
 
       <div class="last-update" *ngIf="monitoringData">
         <span>Última actualización: {{ monitoringData.lastUpdated | date:'medium' }}</span>
-        <mat-icon [class.spinning]="isLoading">refresh</mat-icon>
+        <span *ngIf="isMonitoring" class="monitoring-indicator">
+          <mat-icon class="spinning">refresh</mat-icon>
+          Actualizando...
+        </span>
+        <mat-icon *ngIf="!isMonitoring && !isLoading" class="monitoring-ready">check_circle</mat-icon>
       </div>
 
       <div class="stations-grid" *ngIf="!isLoading && stationCards.length > 0">
@@ -314,12 +330,55 @@ interface StationCard {
       color: #ff9800;
     }
 
-    .summary-card.total {
-      border-left: 4px solid #2196f3;
+    .summary-card.performance {
+      border-left: 4px solid #9c27b0;
     }
 
-    .summary-card.total .count {
-      color: #2196f3;
+    .summary-card.performance .count {
+      color: #9c27b0;
+    }
+
+    .summary-card.errors {
+      border-left: 4px solid #f44336;
+    }
+
+    .summary-card.errors .count {
+      color: #f44336;
+    }
+
+    .summary-card .total {
+      font-size: 12px;
+      color: #666;
+      text-align: center;
+    }
+
+    .connection-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .connection-status.status-connected {
+      background-color: #e8f5e8;
+      color: #4caf50;
+    }
+
+    .connection-status.status-disconnected {
+      background-color: #ffebee;
+      color: #f44336;
+    }
+
+    .connection-status.status-reconnecting {
+      background-color: #fff3e0;
+      color: #ff9800;
+    }
+
+    .connection-status mat-icon {
+      font-size: 16px;
     }
 
     .last-update {
@@ -330,6 +389,19 @@ interface StationCard {
       margin-bottom: 16px;
       font-size: 12px;
       color: #666;
+    }
+
+    .monitoring-indicator {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      color: #2196f3;
+      font-weight: 500;
+    }
+
+    .monitoring-ready {
+      color: #4caf50;
+      font-size: 16px;
     }
 
     .spinning {
@@ -649,49 +721,90 @@ interface StationCard {
 export class StationMonitoringComponent implements OnInit, OnDestroy {
   monitoringData: StationMonitoringResponse | null = null;
   stationCards: StationCard[] = [];
+  stats: MonitoringStats | null = null;
+  connectionStatus: 'connected' | 'disconnected' | 'reconnecting' = 'disconnected';
+  
   isLoading = true;
-  refreshInterval = 10000; // 5 segundos por defecto
+  isMonitoring = false;
+  refreshInterval = 500; // 500ms por defecto para TIEMPO REAL EXTREMO
   
   private subscription?: Subscription;
+  private statsSubscription?: Subscription;
+  private connectionSubscription?: Subscription;
+  private shouldStopMonitoring = false;
+  
   testingConnections = new Set<number>();
   restartingWorkers = new Set<number>();
 
   constructor(
-    private stationService: StationMonitoringService,
-    private snackBar: MatSnackBar
+    private stationService: RealTimeStationMonitoringService,
+    private snackBar: MatSnackBar,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
-    this.startMonitoring();
+    this.startRealTimeMonitoring();
+    this.subscribeToStats();
+    this.subscribeToConnectionStatus();
   }
 
   ngOnDestroy(): void {
+    this.stationService.stopMonitoring();
     this.subscription?.unsubscribe();
+    this.statsSubscription?.unsubscribe();
+    this.connectionSubscription?.unsubscribe();
   }
 
-  private startMonitoring(): void {
+  private startRealTimeMonitoring(): void {
     this.subscription?.unsubscribe();
     
+    // TIEMPO REAL EXTREMO: 500ms (0.5 segundos)
     this.subscription = this.stationService
-      .getStationMonitoringData(this.refreshInterval)
+      .startRealTimeMonitoring(500) // Forzar 500ms para tiempo real extremo
       .subscribe({
-        next: (data) => {
+        next: (data: StationMonitoringResponse) => {
           this.monitoringData = data;
           this.processStationData(data);
           this.isLoading = false;
+          this.isMonitoring = !data.hasError;
         },
-        error: (error) => {
-          console.error('Error loading monitoring data:', error);
+        error: (error: any) => {
+          console.error('Error in real-time monitoring:', error);
           this.isLoading = false;
-          this.snackBar.open('Error al cargar datos de monitoreo', 'Cerrar', {
-            duration: 10000,
-            panelClass: ['error-snackbar']
-          });
+          // No desactivar monitoreo en caso de error temporal
+          setTimeout(() => {
+            if (!this.isMonitoring) {
+              this.startRealTimeMonitoring();
+            }
+          }, 1000);
         }
       });
   }
 
+  private subscribeToStats(): void {
+    this.statsSubscription = this.stationService
+      .getMonitoringStats()
+      .subscribe(stats => {
+        this.stats = stats;
+      });
+  }
+
+  private subscribeToConnectionStatus(): void {
+    this.connectionSubscription = this.stationService
+      .getConnectionStatus()
+      .subscribe(status => {
+        this.connectionStatus = status;
+      });
+  }
+
   private processStationData(data: StationMonitoringResponse): void {
+    console.log('🔄 [COMPONENT] Processing station data:', {
+      hasError: data.hasError,
+      stationsCount: data.data.length,
+      lastUpdated: data.lastUpdated,
+      isRealTime: data.isRealTime
+    });
+
     if (data.hasError) {
       this.snackBar.open(data.errorMessage || 'Error al cargar datos', 'Cerrar', {
         duration: 10000,
@@ -699,6 +812,7 @@ export class StationMonitoringComponent implements OnInit, OnDestroy {
       });
     }
 
+    const previousStationCards = JSON.stringify(this.stationCards);
     this.stationCards = data.data.map(station => {
       // Contabilizar correctamente los coils activos y de alarma basado en estado actual
       const activeCoils = station.coilsConfiguracion?.filter(c => c.estadoActual).length || 0;
@@ -721,6 +835,21 @@ export class StationMonitoringComponent implements OnInit, OnDestroy {
         estadoWorker: station.estadoWorker
       };
     });
+
+    // Log specific changes for PLC Simulador Local
+    const plcSimulador = data.data.find(s => s.nombre === 'PLC Simulador Local');
+    if (plcSimulador) {
+      console.log('🎯 [COMPONENT] PLC Simulador Local coils:', 
+        plcSimulador.coilsConfiguracion?.map(c => `${c.nombre}: ${c.estadoActual}`).join(', ')
+      );
+    }
+
+    // Force change detection if there are changes
+    const currentStationCards = JSON.stringify(this.stationCards);
+    if (data.isRealTime || previousStationCards !== currentStationCards) {
+      console.log('✅ [COMPONENT] Forcing change detection - UI should update');
+      this.cdr.detectChanges();
+    }
   }
 
   private mapConnectionStatus(connected: boolean, workerStatus: string): 'connected' | 'disconnected' | 'starting' | 'error' | 'stopped' {
@@ -732,12 +861,30 @@ export class StationMonitoringComponent implements OnInit, OnDestroy {
   }
 
   onRefreshIntervalChange(): void {
-    this.startMonitoring();
+    // Reiniciar el monitoreo con el nuevo intervalo
+    this.stationService.stopMonitoring();
+    this.startRealTimeMonitoring();
   }
 
   refreshData(): void {
+    // Forzar una actualización inmediata
     this.isLoading = true;
-    this.startMonitoring();
+    
+    this.stationService.forceRefresh().subscribe({
+      next: (data: StationMonitoringResponse) => {
+        this.monitoringData = data;
+        this.processStationData(data);
+        this.isLoading = false;
+      },
+      error: (error: any) => {
+        console.error('Error refreshing data:', error);
+        this.isLoading = false;
+        this.snackBar.open('Error al actualizar datos', 'Cerrar', {
+          duration: 3000,
+          panelClass: ['error-snackbar']
+        });
+      }
+    });
   }
 
   getStationsByStatus(status: string): StationCard[] {
@@ -892,5 +1039,40 @@ export class StationMonitoringComponent implements OnInit, OnDestroy {
     if (diffMs < 3600000) return `${Math.floor(diffMs / 60000)}m`;
     if (diffMs < 86400000) return `${Math.floor(diffMs / 3600000)}h`;
     return `${Math.floor(diffMs / 86400000)}d`;
+  }
+
+  onRefresh(): void {
+    this.stationService.forceRefresh().subscribe();
+  }
+
+  onTogglePolling(): void {
+    if (this.isMonitoring) {
+      this.stationService.stopMonitoring();
+      this.isMonitoring = false;
+    } else {
+      this.startRealTimeMonitoring();
+    }
+  }
+
+  getConnectionIcon(): string {
+    switch (this.connectionStatus) {
+      case 'connected':
+        return 'check_circle';
+      case 'reconnecting':
+        return 'sync';
+      default:
+        return 'radio_button_unchecked';
+    }
+  }
+
+  getConnectionText(): string {
+    switch (this.connectionStatus) {
+      case 'connected':
+        return 'Conectado';
+      case 'reconnecting':
+        return 'Reconectando...';
+      default:
+        return 'Desconectado';
+    }
   }
 }

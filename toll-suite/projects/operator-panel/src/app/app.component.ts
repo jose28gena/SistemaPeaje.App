@@ -40,6 +40,10 @@ import { MatListModule } from '@angular/material/list';
             <mat-icon>settings</mat-icon>
             <span>Configuración</span>
           </a>
+          <a mat-list-item routerLink="/tipos-vehiculo">
+            <mat-icon>directions_car</mat-icon>
+            <span>Tipos de Vehículo</span>
+          </a>
         </mat-nav-list>
       </mat-sidenav>
 

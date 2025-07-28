@@ -105,6 +105,13 @@ export class StationMonitoringService {
   }
 
   /**
+   * Obtiene los datos de monitoreo una sola vez (sin intervalo automático)
+   */
+  getStationMonitoringDataOnce(): Observable<StationMonitoringResponse> {
+    return this.fetchMonitoringData();
+  }
+
+  /**
    * Obtiene los datos de monitoreo del endpoint específico
    */
   private fetchMonitoringData(): Observable<StationMonitoringResponse> {
