@@ -4,7 +4,11 @@
     "src/main.ts"
   ],
   "include": [
-    "src/**/*.d.ts"
+    "src/**/*.d.ts",
+    "src/environments/**/*.ts",
+    "src/app/app-routing.module.ts",
+    "src/app/app.component.ts",
+    "src/app/features/operator-interface/**/*.ts"
   ],
   "compilerOptions": {
     "outDir": "../../dist/out-tsc"

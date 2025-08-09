@@ -1,4 +1,4 @@
-import { Component, OnInit, HostListener } from '@angular/core';
+import { Component, OnInit, HostListener, TemplateRef, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -12,6 +12,21 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatDividerModule } from '@angular/material/divider';
 import { FormsModule } from '@angular/forms';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { PaymentModalComponent } from './payment-modal.component';
+import { 
+  TurnosService, 
+  AbrirTurnoBackendDto, 
+  CerrarTurnoBackendDto, 
+  TurnoBackend,
+  EstacionesService,
+  EmpleadosService,
+  Estacion,
+  Carril,
+  Empleado
+} from '@toll-suite/data-access';
 
 interface VehicleClass {
   id: number;
@@ -31,6 +46,7 @@ interface SystemStatus {
   network: 'online' | 'warning' | 'offline';
   plc: 'online' | 'warning' | 'offline';
   loop: 'online' | 'warning' | 'offline';
+  printer: 'online' | 'warning' | 'offline';
   ups: 'online' | 'warning' | 'offline';
 }
 
@@ -50,10 +66,19 @@ interface SystemStatus {
     MatToolbarModule,
     MatBadgeModule,
     MatDividerModule,
+    MatDialogModule,
+    MatSnackBarModule,
+    MatTooltipModule,
     FormsModule
   ],
   template: `
     <div class="operator-layout">
+      <div class="processing-overlay" *ngIf="isProcessing">
+        <div class="processing-box">
+          <mat-icon>hourglass_top</mat-icon>
+          <span>Procesando…</span>
+        </div>
+      </div>
       <!-- Header (12x1) -->
       <mat-toolbar class="header-toolbar" color="primary">
         <div class="header-section">
@@ -64,241 +89,247 @@ interface SystemStatus {
           <span class="clock">{{ currentTime | date:'HH:mm:ss' }}</span>
         </div>
         <div class="header-actions">
-          <span class="operator-name">{{ operatorName }}</span>
-          <button mat-icon-button (click)="logout()" matTooltip="Cerrar Sesión">
-            <mat-icon>logout</mat-icon>
+          <button mat-icon-button (click)="toggleFullscreen()" [matTooltip]="isFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'">
+            <mat-icon>{{ isFullscreen ? 'fullscreen_exit' : 'fullscreen' }}</mat-icon>
           </button>
+          <span class="operator-name">{{ operatorName }}</span>
         </div>
       </mat-toolbar>
 
-      <!-- Main Content Area -->
-      <div class="main-content">
-        <!-- Vehicle Panel (8 columns) -->
-        <div class="vehicle-panel">
-          <mat-card class="panel-card">
-            <mat-card-header>
-              <mat-card-title>Panel Vehículo</mat-card-title>
-            </mat-card-header>
-            <mat-card-content>
-              <!-- Live Camera Feed -->
-              <div class="camera-section">
-                <div class="camera-feed">
-                  <div class="camera-placeholder">
-                    <mat-icon>videocam</mat-icon>
-                    <span>Cámara en vivo</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- OCR/LPR Results -->
-              <div class="ocr-section">
-                <div class="ocr-result">
-                  <span class="label">Placa detectada:</span>
-                  <span class="value">{{ detectedPlate }}</span>
-                </div>
-                <div class="confidence">
-                  <span>Confianza: {{ ocrConfidence }}%</span>
-                </div>
-              </div>
-
-              <!-- Vehicle Classification -->
-              <div class="classification-section">
-                <div class="suggested-class">
-                  <span class="label">Clase sugerida:</span>
-                  <mat-chip-listbox>
-                    <mat-chip-option [selected]="selectedClass?.id === suggestedClass?.id">
-                      {{ suggestedClass?.name }}
-                    </mat-chip-option>
-                  </mat-chip-listbox>
-                </div>
-                <div class="vehicle-details">
-                  <span>Ejes: {{ axlesCount }}</span>
-                  <span>Velocidad: {{ speed }} km/h</span>
-                  <span>Peso: {{ weight }} kg</span>
-                </div>
-              </div>
-
-              <!-- Validation Actions -->
-              <div class="validation-actions">
-                <button mat-raised-button color="primary" (click)="validateClass()">
-                  <mat-icon>check</mat-icon>
-                  Validar
-                </button>
-                <button mat-raised-button color="accent" (click)="correctClass()">
-                  <mat-icon>edit</mat-icon>
-                  Corregir
-                </button>
-              </div>
-
-              <!-- Class Selection Buttons -->
-              <div class="class-buttons">
-                <div class="class-grid">
-                  <button 
-                    mat-raised-button 
-                    *ngFor="let vehicleClass of vehicleClasses"
-                    [color]="selectedClass?.id === vehicleClass.id ? 'primary' : ''"
-                    (click)="selectClass(vehicleClass)"
-                    class="class-button">
-                    {{ vehicleClass.name }}
-                  </button>
-                </div>
-              </div>
-
-              <!-- Axles Control -->
-              <div class="axles-control">
-                <button mat-icon-button (click)="addAxle()" matTooltip="+1 Eje">
-                  <mat-icon>add</mat-icon>
-                </button>
-                <span class="axle-count">{{ axlesCount }} ejes</span>
-                <button mat-icon-button (click)="removeAxle()" matTooltip="-1 Eje">
-                  <mat-icon>remove</mat-icon>
-                </button>
-                <button mat-icon-button (click)="undo()" matTooltip="Deshacer" class="undo-btn">
-                  <mat-icon>undo</mat-icon>
-                </button>
-              </div>
-            </mat-card-content>
-          </mat-card>
-        </div>
-
-        <!-- Payment Panel (4 columns) -->
-        <div class="payment-panel">
-          <mat-card class="panel-card">
-            <mat-card-header>
-              <mat-card-title>Panel de Cobro</mat-card-title>
-            </mat-card-header>
-            <mat-card-content>
-              <!-- Rate Information -->
-              <div class="rate-section">
-                <div class="rate-details">
-                  <div class="rate-line">
-                    <span class="label">Clase:</span>
-                    <span class="value">{{ selectedClass?.name || '-' }}</span>
-                  </div>
-                  <div class="rate-line">
-                    <span class="label">Tarifa base:</span>
-                    <span class="value">\${{ calculateBaseRate() | number:'1.2-2' }}</span>
-                  </div>
-                  <div class="rate-line">
-                    <span class="label">IVA:</span>
-                    <span class="value">\${{ calculateTax() | number:'1.2-2' }}</span>
-                  </div>
-                  <mat-divider></mat-divider>
-                  <div class="rate-line total">
-                    <span class="label">Total:</span>
-                    <span class="value">\${{ calculateTotal() | number:'1.2-2' }}</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Payment Methods -->
-              <div class="payment-methods">
-                <h4>Método de pago:</h4>
-                <div class="payment-buttons">
-                  <button 
-                    mat-raised-button 
-                    *ngFor="let method of paymentMethods"
-                    [color]="selectedPaymentMethod === method.id ? 'primary' : ''"
-                    (click)="selectPaymentMethod(method.id)"
-                    class="payment-button">
-                    <span class="hotkey">[{{ method.hotkey }}]</span>
-                    {{ method.name }}
-                  </button>
-                </div>
-              </div>
-
-              <!-- Payment Details -->
-              <div class="payment-details" *ngIf="selectedPaymentMethod === 'cash'">
-                <mat-form-field appearance="outline" class="amount-field">
-                  <mat-label>Importe recibido</mat-label>
-                  <input matInput type="number" [(ngModel)]="receivedAmount" (ngModelChange)="calculateChange()">
-                  <span matPrefix>\$</span>
-                </mat-form-field>
-                <div class="change-amount" *ngIf="change !== null">
-                  <span class="label">Cambio:</span>
-                  <span class="value" [class.negative]="change < 0">\${{ change | number:'1.2-2' }}</span>
-                </div>
-              </div>
-
-              <!-- Process Button -->
-              <div class="process-section">
-                <button 
-                  mat-raised-button 
-                  color="primary" 
-                  class="process-button"
-                  [disabled]="!canProcess()"
-                  (click)="processPayment()">
-                  <mat-icon>payment</mat-icon>
-                  PROCESAR
-                </button>
-              </div>
-            </mat-card-content>
-          </mat-card>
-        </div>
-      </div>
-
-      <!-- Incidents Sidebar (12x3) -->
-      <div class="incidents-sidebar">
-        <mat-card class="sidebar-card">
-          <mat-card-header>
-            <mat-card-title>
-              <mat-icon>warning</mat-icon>
-              Incidencias
-            </mat-card-title>
-          </mat-card-header>
+      <!-- Turno Panel (quick open/close) -->
+      <div class="turno-panel" style="padding: 8px 16px;">
+        <mat-card>
           <mat-card-content>
-            <div class="alerts-section">
-              <div class="alert-item" *ngFor="let alert of activeAlerts">
-                <mat-icon [color]="alert.severity">{{ alert.icon }}</mat-icon>
-                <span>{{ alert.message }}</span>
+            <div *ngIf="!turnoActivo; else cierreTpl">
+              <div style="display:flex; gap: 12px; flex-wrap: wrap; align-items: end;">
+                <mat-form-field appearance="outline" style="width: 240px;">
+                  <mat-label>Estación</mat-label>
+                  <mat-select [(ngModel)]="selectedEstacionId" (selectionChange)="onEstacionChange()">
+                    <mat-option *ngFor="let est of estaciones" [value]="est.id">{{ est.nombre }}</mat-option>
+                  </mat-select>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" style="width: 240px;">
+                  <mat-label>Carril</mat-label>
+                  <mat-select [(ngModel)]="selectedCarrilId">
+                    <mat-option [value]="null">Sin carril</mat-option>
+                    <mat-option *ngFor="let c of carriles" [value]="c.id">{{ c.numero }}</mat-option>
+                  </mat-select>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" style="width: 260px;">
+                  <mat-label>Empleado</mat-label>
+                  <mat-select [(ngModel)]="selectedEmpleadoId">
+                    <mat-option *ngFor="let e of empleados" [value]="e.id">{{ e.nombres }} {{ e.apellidos }}</mat-option>
+                  </mat-select>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" style="width: 180px;">
+                  <mat-label>Saldo Inicial</mat-label>
+                  <input matInput type="number" [(ngModel)]="montoInicialApertura">
+                  <span matPrefix>$&nbsp;</span>
+                </mat-form-field>
+
+                <button mat-raised-button color="primary" (click)="abrirTurno()" [disabled]="!puedeAbrirTurno()">
+                  <mat-icon>login</mat-icon>
+                  Abrir turno
+                </button>
               </div>
-              <button mat-stroked-button (click)="registerIncident()" class="incident-button">
-                <mat-icon>add</mat-icon>
-                [Ctrl + I] Registrar Incidencia
-              </button>
             </div>
-            
-            <mat-divider></mat-divider>
-            
-            <div class="shift-stats">
-              <h4>Estadísticas del Turno</h4>
-              <div class="stat-item">
-                <span class="label">Total procesados:</span>
-                <span class="value">{{ shiftStats.total }}</span>
+
+            <ng-template #cierreTpl>
+              <div style="display:flex; gap: 12px; flex-wrap: wrap; align-items: end;">
+                <div style="margin-right: 12px;">
+                  <strong>Turno activo:</strong>
+                  <span>#{{ turnoActivo?.id }} · Estación {{ turnoActivo?.estacionId }} · Carril {{ turnoActivo?.carrilId || '-' }}</span>
+                </div>
+                <mat-form-field appearance="outline" style="width: 160px;">
+                  <mat-label>Caja Final</mat-label>
+                  <input matInput type="number" [(ngModel)]="montoFinalCaja">
+                  <span matPrefix>$&nbsp;</span>
+                </mat-form-field>
+                <mat-form-field appearance="outline" style="width: 160px;">
+                  <mat-label>Ventas Efectivo</mat-label>
+                  <input matInput type="number" [(ngModel)]="ventasEfectivo">
+                  <span matPrefix>$&nbsp;</span>
+                </mat-form-field>
+                <mat-form-field appearance="outline" style="width: 160px;">
+                  <mat-label>Efectivo Contado</mat-label>
+                  <input matInput type="number" [(ngModel)]="efectivoContado">
+                  <span matPrefix>$&nbsp;</span>
+                </mat-form-field>
+                <mat-form-field appearance="outline" style="width: 160px;">
+                  <mat-label>Ventas Prepago</mat-label>
+                  <input matInput type="number" [(ngModel)]="ventasPrepago">
+                  <span matPrefix>$&nbsp;</span>
+                </mat-form-field>
+                <mat-form-field appearance="outline" style="width: 140px;">
+                  <mat-label>Exentos</mat-label>
+                  <input matInput type="number" [(ngModel)]="cantidadExentos">
+                </mat-form-field>
+                <button mat-raised-button color="accent" (click)="cerrarTurno()" [disabled]="!puedeCerrarTurno()">
+                  <mat-icon>logout</mat-icon>
+                  Cerrar turno
+                </button>
               </div>
-              <div class="stat-item">
-                <span class="label">Fallos:</span>
-                <span class="value">{{ shiftStats.errors }}</span>
-              </div>
-              <div class="stat-item">
-                <span class="label">Tiempo promedio:</span>
-                <span class="value">{{ shiftStats.averageTime }}s</span>
-              </div>
-            </div>
+            </ng-template>
           </mat-card-content>
         </mat-card>
+      </div>
+
+        <!-- Confirm Close Shift Dialog -->
+        <ng-template #closeShiftTpl>
+          <h2 mat-dialog-title>¿Cerrar turno?</h2>
+          <div mat-dialog-content>
+            <p>Se enviará el cierre con los importes capturados.</p>
+          </div>
+          <div mat-dialog-actions align="end">
+            <button mat-button mat-dialog-close>Cancelar</button>
+            <button mat-flat-button color="primary" (click)="confirmCloseShift()">Cerrar turno</button>
+          </div>
+        </ng-template>
+
+      <!-- Main Content Area -->
+      <div class="main-content">
+        <!-- Left: Kiosk Operations Panel -->
+        <div class="kiosk-operations">
+          <!-- Kiosk-style Operator Panel -->
+          <div class="kiosk-wrapper">
+            <h2 class="kiosk-title">Panel del Operador</h2>
+            <div class="kiosk-frame">
+              <div class="kiosk-inner">
+                <!-- Left block: categories and options -->
+                <div class="kiosk-left">
+                  <div class="row" *ngFor="let row of uiRows">
+                    <button class="category-btn" [disabled]="row.disabled" (click)="onSelectCategory(row)">
+                      <mat-icon class="category-icon">{{ row.icon }}</mat-icon>
+                      <div class="category-text">
+                        <div class="line1">{{ row.titleLine1 }}</div>
+                        <div class="line2" *ngIf="row.titleLine2">{{ row.titleLine2 }}</div>
+                      </div>
+                    </button>
+                    <div class="arrow">▶</div>
+                    <div class="options" *ngIf="row.options?.length">
+                      <button class="option-btn" [ngClass]="{ active: isActiveOption(opt) }" *ngFor="let opt of row.options" (click)="onSelectOption(opt)">{{ opt.label }}</button>
+                    </div>
+                    <div class="options" *ngIf="row.actions?.length">
+                      <button class="option-btn" [disabled]="row.disabled" *ngFor="let act of row.actions" (click)="onAction(act)">{{ act.label }}</button>
+                    </div>
+                  </div>
+
+                  <div class="controls-row">
+                    <button class="control-btn" (click)="onClear()" aria-label="Clear">C</button>
+                    <button class="control-btn" (click)="onUndo()" aria-label="Undo"><mat-icon>undo</mat-icon></button>
+                    <button class="control-btn" (click)="onRedo()" aria-label="Redo"><mat-icon>redo</mat-icon></button>
+                    <button class="process-btn" [disabled]="!canProcessKiosk()" (click)="onProcess()">PROCESAR</button>
+                  </div>
+                </div>
+
+                <!-- Right block: Payment and Receipt Section -->
+                <div class="payment-section">
+                  <!-- Receipt Preview -->
+                  <div class="receipt-preview">
+                    <h3 class="section-title">Vista Previa del Ticket</h3>
+                    <div class="ticket-display">
+                      <div class="ticket-header">
+                        <div class="ticket-info">Fideicomiso Puente Colorado</div>
+                        <div class="ticket-info">Km. 2.5 Carretera San Luis RC - Mexicali</div>
+                        <div class="ticket-info">FOLIO: {{ generateFolio() }} FECHA: {{ currentTime | date:'dd/MM/yyyy HH:mm' }}</div>
+                        <div class="ticket-info">CARRIL: {{ (turnoActivo?.carrilId ?? selectedCarrilId) || '--' | number:'2.0' }}        CAJERO: {{ selectedEmpleadoId || '--' }}</div>
+                        <div class="ticket-separator">==========================</div>
+                        <div class="ticket-info">NF:{{ generateNF() }}</div>
+                      </div>
+                      <div class="ticket-details">
+                        <div class="vehicle-info">
+                          <span>CLASE: {{ selectedClass?.name || selectedOption?.label || '-' }}</span>
+                        </div>
+                        <div class="amount-breakdown">
+                          <div class="amount-line">IMPORTE: \${{ calculateTotal().toFixed(2) }}</div>
+                          <div class="amount-line">IVA: \${{ calculateTax().toFixed(2) }}</div>
+                          <div class="amount-line total">TOTAL: \${{ calculateTotal().toFixed(2) }}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Payment Methods -->
+                  <div class="payment-methods">
+                    <h3 class="section-title">Métodos de Pago</h3>
+                    <div class="payment-grid">
+                      <button 
+                        class="payment-btn" 
+                        [ngClass]="{ active: selectedPaymentMethod?.id === method.id }"
+                        *ngFor="let method of paymentMethods" 
+                        (click)="selectPaymentMethod(method)">
+                        <mat-icon>{{ getPaymentIcon(method.id) }}</mat-icon>
+                        <span>{{ method.name }}</span>
+                        <span class="hotkey">{{ method.hotkey }}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Amount Entry (for cash payments) -->
+                  <div class="amount-entry" *ngIf="selectedPaymentMethod?.id === 'cash'">
+                    <h3 class="section-title">Cantidad Recibida</h3>
+                    <div class="amount-input">
+                      <mat-form-field appearance="outline">
+                        <mat-label>Importe recibido</mat-label>
+                        <input matInput type="number" [(ngModel)]="receivedAmount" (input)="calculateChange()" />
+                        <span matPrefix>$&nbsp;</span>
+                      </mat-form-field>
+                    </div>
+                    <div class="quick-amounts">
+                      <button class="quick-btn" *ngFor="let amount of quickAmounts" (click)="setQuickAmount(amount)">
+                        \${{ amount }}
+                      </button>
+                    </div>
+                    <div class="change-display" *ngIf="changeAmount >= 0">
+                      <span class="change-label">Cambio:</span>
+                      <span class="change-value">\${{ changeAmount.toFixed(2) }}</span>
+                    </div>
+                  </div>
+
+                  <!-- Process Payment Button -->
+                  <div class="process-payment">
+                    <button 
+                      class="process-payment-btn" 
+                      [disabled]="!canProcessPayment()" 
+                      (click)="processPayment()">
+                      <mat-icon>payment</mat-icon>
+                      COBRAR - \${{ calculateTotal().toFixed(2) }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Footer Status Bar (12x1) -->
       <div class="footer-status">
         <div class="status-indicators">
-          <div class="status-item" [class]="systemStatus.camera">
+          <div class="status-item" [class]="systemStatus.camera" [matTooltip]="'Cámara: ' + systemStatus.camera">
             <mat-icon>videocam</mat-icon>
             <span>Cámara</span>
           </div>
-          <div class="status-item" [class]="systemStatus.network">
+          <div class="status-item" [class]="systemStatus.network" [matTooltip]="'Red: ' + systemStatus.network">
             <mat-icon>wifi</mat-icon>
             <span>Red</span>
           </div>
-          <div class="status-item" [class]="systemStatus.plc">
+          <div class="status-item" [class]="systemStatus.plc" [matTooltip]="'PLC: ' + systemStatus.plc">
             <mat-icon>memory</mat-icon>
             <span>PLC</span>
           </div>
-          <div class="status-item" [class]="systemStatus.loop">
+          <div class="status-item" [class]="systemStatus.loop" [matTooltip]="'Lazo: ' + systemStatus.loop">
             <mat-icon>sensors</mat-icon>
             <span>Lazo</span>
           </div>
-          <div class="status-item" [class]="systemStatus.ups">
+          <div class="status-item" [class]="systemStatus.printer" [matTooltip]="'Impresora: ' + systemStatus.printer">
+            <mat-icon>print</mat-icon>
+            <span>Impresora</span>
+          </div>
+          <div class="status-item" [class]="systemStatus.ups" [matTooltip]="'UPS: ' + systemStatus.ups">
             <mat-icon>battery_charging_full</mat-icon>
             <span>UPS</span>
           </div>
@@ -309,14 +340,32 @@ interface SystemStatus {
   styleUrls: ['./operator-interface.component.scss']
 })
 export class OperatorInterfaceComponent implements OnInit {
+  @ViewChild('closeShiftTpl') closeShiftTpl!: TemplateRef<any>;
+
   currentTime = new Date();
   operatorName = 'Juan Pérez';
+  // Simple flow state
+  state: 'idle' | 'detecting' | 'classified' | 'awaitingPayment' | 'processing' | 'ticket' | 'exiting' = 'idle';
+  isProcessing = false;
+  isDark = false;
+  isFullscreen = false;
+  // Turno state
+  turnoActivo: TurnoBackend | null = null;
+  estaciones: Estacion[] = [];
+  carriles: Carril[] = [];
+  empleados: Empleado[] = [];
+  selectedEstacionId: number | null = null;
+  selectedCarrilId: number | null = null;
+  selectedEmpleadoId: number | null = null;
+  montoInicialApertura: number | null = null;
+  // Cierre fields
+  montoFinalCaja: number | null = null;
+  ventasEfectivo: number | null = null;
+  efectivoContado: number | null = null;
+  ventasPrepago: number | null = null;
+  cantidadExentos: number | null = null;
   
-  // Vehicle detection data
-  detectedPlate = 'ABC-123';
-  ocrConfidence = 95;
-  speed = 45;
-  weight = 2500;
+  // Vehicle data  
   axlesCount = 2;
   
   // Vehicle classes
@@ -332,6 +381,12 @@ export class OperatorInterfaceComponent implements OnInit {
   suggestedClass = this.vehicleClasses[0];
   selectedClass: VehicleClass | null = null;
   
+  // Payment data
+  selectedPaymentMethod: PaymentMethod | null = null;
+  receivedAmount: number = 0;
+  changeAmount: number = 0;
+  quickAmounts = [25, 50, 100, 200, 500];
+  
   // Payment methods
   paymentMethods: PaymentMethod[] = [
     { id: 'cash', name: 'Efectivo', hotkey: 'F1' },
@@ -340,31 +395,23 @@ export class OperatorInterfaceComponent implements OnInit {
     { id: 'exempt', name: 'Exento', hotkey: 'F4' }
   ];
   
-  selectedPaymentMethod: string | null = null;
-  receivedAmount: number | null = null;
-  change: number | null = null;
-  
-  // Alerts and incidents
-  activeAlerts = [
-    { severity: 'warn', icon: 'error', message: 'Sensor de peso desactivado' },
-    { severity: 'primary', icon: 'info', message: 'Evasión detectada en carril 3' }
-  ];
-  
-  // Shift statistics
-  shiftStats = {
-    total: 156,
-    errors: 3,
-    averageTime: 12.5
-  };
-  
   // System status
   systemStatus: SystemStatus = {
     camera: 'online',
     network: 'online',
     plc: 'warning',
     loop: 'online',
+    printer: 'online',
     ups: 'online'
   };
+
+  constructor(
+    private turnosService: TurnosService,
+    private estacionesService: EstacionesService,
+    private empleadosService: EmpleadosService,
+    private dialog: MatDialog,
+    private snack: MatSnackBar
+  ) {}
 
   ngOnInit() {
     // Update clock every second
@@ -374,35 +421,26 @@ export class OperatorInterfaceComponent implements OnInit {
     
     // Select suggested class by default
     this.selectedClass = this.suggestedClass;
+
+    // Load catalog data for opening a turno
+    this.loadEstaciones();
+    this.loadEmpleados();
+
+    // Try to load active turno from localStorage (if opened previously)
+    try {
+      const saved = localStorage.getItem('turnoActivo');
+      if (saved) {
+        this.turnoActivo = JSON.parse(saved);
+      }
+    } catch {}
   }
 
   @HostListener('window:keydown', ['$event'])
   handleKeyboardShortcut(event: KeyboardEvent) {
-    switch (event.key) {
-      case 'F1':
-        event.preventDefault();
-        this.selectPaymentMethod('cash');
-        break;
-      case 'F2':
-        event.preventDefault();
-        this.selectPaymentMethod('rfid');
-        break;
-      case 'F3':
-        event.preventDefault();
-        this.selectPaymentMethod('qr');
-        break;
-      case 'F4':
-        event.preventDefault();
-        this.selectPaymentMethod('exempt');
-        break;
-    }
+    // Removed F1-F4 hotkeys as payment method selection now happens in modal
     
     if (event.ctrlKey) {
       switch (event.key.toLowerCase()) {
-        case 'i':
-          event.preventDefault();
-          this.registerIncident();
-          break;
         case 't':
           event.preventDefault();
           this.closeShift();
@@ -413,16 +451,8 @@ export class OperatorInterfaceComponent implements OnInit {
 
   selectClass(vehicleClass: VehicleClass) {
     this.selectedClass = vehicleClass;
+    this.state = 'classified';
   }
-
-  validateClass() {
-    console.log('Clase validada:', this.selectedClass);
-  }
-
-  correctClass() {
-    console.log('Corrigiendo clase...');
-  }
-
   addAxle() {
     this.axlesCount++;
   }
@@ -437,13 +467,6 @@ export class OperatorInterfaceComponent implements OnInit {
     console.log('Deshaciendo última acción...');
   }
 
-  selectPaymentMethod(method: string) {
-    this.selectedPaymentMethod = method;
-    if (method !== 'cash') {
-      this.receivedAmount = null;
-      this.change = null;
-    }
-  }
 
   calculateBaseRate(): number {
     return this.selectedClass?.rate || 0;
@@ -457,53 +480,403 @@ export class OperatorInterfaceComponent implements OnInit {
     return this.calculateBaseRate() + this.calculateTax();
   }
 
-  calculateChange() {
-    if (this.receivedAmount !== null) {
-      this.change = this.receivedAmount - this.calculateTotal();
-    }
-  }
 
-  canProcess(): boolean {
-    if (!this.selectedClass || !this.selectedPaymentMethod) {
-      return false;
-    }
-    
-    if (this.selectedPaymentMethod === 'cash') {
-      return this.receivedAmount !== null && this.receivedAmount >= this.calculateTotal();
-    }
-    
-    return true;
-  }
 
   processPayment() {
-    console.log('Procesando pago...', {
-      class: this.selectedClass,
-      method: this.selectedPaymentMethod,
-      amount: this.calculateTotal(),
-      received: this.receivedAmount,
-      change: this.change
-    });
+    if (this.isProcessing || !this.selectedClass) return;
     
-    // Reset for next vehicle
-    this.resetTransaction();
-  }
+    // Open payment modal
+    const dialogRef = this.dialog.open(PaymentModalComponent, {
+      width: '600px',
+      maxWidth: '90vw',
+      maxHeight: '90vh',
+      disableClose: true,
+      data: {
+        selectedClass: this.selectedClass,
+        baseRate: this.calculateBaseRate(),
+        tax: this.calculateTax(),
+        total: this.calculateTotal(),
+        paymentMethods: this.paymentMethods
+      }
+    });
 
-  registerIncident() {
-    console.log('Registrando incidencia...');
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        // Payment was processed
+        this.isProcessing = true;
+        this.state = 'processing';
+        
+        console.log('Procesando pago...', {
+          class: this.selectedClass,
+          method: result.method,
+          amount: result.amount,
+          received: result.received,
+          change: result.change
+        });
+        
+        // Simulate ticket print and barrier open
+        setTimeout(() => {
+          this.emitTicket();
+          this.openBarrier();
+          this.state = 'ticket';
+          this.snack.open('Pago procesado. Ticket emitido y barrera abierta.', 'OK', { duration: 2500 });
+          setTimeout(() => {
+            this.resetTransaction();
+            this.state = 'idle';
+            this.isProcessing = false;
+          }, 1200);
+        }, 600);
+      }
+    });
   }
 
   closeShift() {
-    console.log('Cerrando turno...');
+    this.dialog.open(this.closeShiftTpl, { width: '420px' });
+  }
+
+  confirmCloseShift() {
+    this.dialog.closeAll();
+    this.cerrarTurno();
   }
 
   logout() {
     console.log('Cerrando sesión...');
   }
 
+  toggleTheme() {
+    this.isDark = !this.isDark;
+    const cls = 'dark-theme';
+    const body = document.body;
+    if (this.isDark) {
+      body.classList.add(cls);
+    } else {
+      body.classList.remove(cls);
+    }
+  }
+
+  toggleFullscreen() {
+    const doc: any = document;
+    const el: any = document.documentElement;
+    if (!doc.fullscreenElement) {
+      el.requestFullscreen?.();
+    } else {
+      doc.exitFullscreen?.();
+    }
+  }
+
+  @HostListener('document:fullscreenchange')
+  onFsChange() {
+    this.isFullscreen = !!document.fullscreenElement;
+  }
+
   private resetTransaction() {
-    this.selectedPaymentMethod = null;
-    this.receivedAmount = null;
-    this.change = null;
     this.selectedClass = this.suggestedClass;
   }
+
+  // Simulate PLC loop trigger and OCR/LPR
+  onLoopDetected() {
+    if (this.state !== 'idle') return;
+    this.state = 'detecting';
+    this.runOcrAndSuggest();
+  }
+
+  private runOcrAndSuggest() {
+    setTimeout(() => {
+      // Auto-select first vehicle class for demo
+      this.selectedClass = this.vehicleClasses[0];
+      this.state = 'awaitingPayment';
+    }, 500);
+  }
+
+  private emitTicket() {
+    // Placeholder for backend print call
+    this.systemStatus.printer = 'online';
+  }
+
+  private openBarrier() {
+    // Placeholder for PLC open call
+    this.systemStatus.plc = 'online';
+    setTimeout(() => (this.systemStatus.plc = 'warning'), 2000);
+  }
+
+  // Turno helpers
+  loadEstaciones() {
+    this.estacionesService.getAll().subscribe({
+      next: (res) => this.estaciones = (res as any).data || res,
+      error: (err) => console.error('Error cargando estaciones', err)
+    });
+  }
+
+  onEstacionChange() {
+    this.carriles = [];
+    if (this.selectedEstacionId != null) {
+      this.estacionesService.getCarrilesByEstacion(this.selectedEstacionId).subscribe({
+        next: (res) => this.carriles = (res as any).data || res,
+        error: (err) => console.error('Error cargando carriles', err)
+      });
+    }
+  }
+
+  loadEmpleados() {
+    this.empleadosService.getActivos().subscribe({
+      next: (res) => this.empleados = (res as any).data || res,
+      error: (err) => console.error('Error cargando empleados', err)
+    });
+  }
+
+  puedeAbrirTurno(): boolean {
+    return !!(this.selectedEstacionId && this.selectedEmpleadoId && this.montoInicialApertura != null && this.montoInicialApertura >= 0);
+  }
+
+  abrirTurno() {
+    if (!this.puedeAbrirTurno()) return;
+    const payload: AbrirTurnoBackendDto = {
+      empleadoId: this.selectedEmpleadoId!,
+      estacionId: this.selectedEstacionId!,
+      carrilId: this.selectedCarrilId ?? undefined,
+      montoInicialCaja: Number(this.montoInicialApertura)
+    };
+    this.turnosService.abrirTurno(payload).subscribe({
+      next: (turno) => {
+        this.turnoActivo = turno;
+        try { localStorage.setItem('turnoActivo', JSON.stringify(turno)); } catch {}
+        // Reset apertura form
+        this.montoInicialApertura = null;
+      },
+      error: (err) => console.error('Error abriendo turno', err)
+    });
+  }
+
+  puedeCerrarTurno(): boolean {
+    return !!(this.turnoActivo && this.montoFinalCaja != null);
+  }
+
+  cerrarTurno() {
+    if (!this.turnoActivo) return;
+    const payload: CerrarTurnoBackendDto = {
+      montoFinalCaja: Number(this.montoFinalCaja ?? 0),
+      ventasEfectivo: this.ventasEfectivo != null ? Number(this.ventasEfectivo) : undefined,
+      efectivoContado: this.efectivoContado != null ? Number(this.efectivoContado) : undefined,
+      ventasPrepago: this.ventasPrepago != null ? Number(this.ventasPrepago) : undefined,
+      cantidadExentos: this.cantidadExentos != null ? Number(this.cantidadExentos) : undefined
+    };
+  this.turnosService.cerrarTurno(this.turnoActivo.id, payload).subscribe({
+      next: (turnoCerrado) => {
+        // Clear turno
+        this.turnoActivo = null;
+        try { localStorage.removeItem('turnoActivo'); } catch {}
+        // Reset cierre fields
+        this.montoFinalCaja = null;
+        this.ventasEfectivo = null;
+        this.efectivoContado = null;
+        this.ventasPrepago = null;
+        this.cantidadExentos = null;
+      },
+      error: (err) => console.error('Error cerrando turno', err)
+    });
+  }
+
+  // ================= KIOSK PANEL STATE & LOGIC =================
+  uiRows: any[] = [
+    {
+      titleLine1: 'MOTOCICLETA',
+      titleLine2: '',
+      icon: 'two_wheeler',
+      options: [
+        { id: 'moto', label: 'MOTO', group: 'moto' },
+        { id: 'triciclo', label: 'TRICICLO', group: 'moto' }
+      ]
+    },
+    {
+      titleLine1: 'AUTOMÓVIL / PICK UP',
+      titleLine2: '',
+      icon: 'directions_car',
+      options: [
+        { id: 'auto', label: 'AUTO', group: 'auto' },
+        { id: 'pickup', label: 'PICK/UP', group: 'auto' },
+        { id: 'van', label: 'VAN', group: 'auto' },
+        { id: 'suv', label: 'SUV', group: 'auto' }
+      ]
+    },
+    {
+      titleLine1: 'AUTOBÚS DE 2 A 4 EJES',
+      titleLine2: '',
+      icon: 'directions_bus',
+      options: [
+        { id: 'bus2', label: '2', group: 'bus' },
+        { id: 'bus3', label: '3', group: 'bus' },
+        { id: 'bus4', label: '4', group: 'bus' }
+      ]
+    },
+    {
+      titleLine1: 'CAMIÓN DE 2 A 4 EJES',
+      titleLine2: '',
+      icon: 'local_shipping',
+      options: [
+        { id: 'truck2', label: '2', group: 'truck' },
+        { id: 'truck3', label: '3', group: 'truck' },
+        { id: 'truck4', label: '4', group: 'truck' }
+      ]
+    },
+    {
+      titleLine1: 'CAMIÓN DE 5 A 6 EJES',
+      titleLine2: '',
+      icon: 'local_shipping',
+      options: [
+        { id: 'truck5', label: '5', group: 'truck' },
+        { id: 'truck6', label: '6', group: 'truck' }
+      ]
+    },
+    {
+      titleLine1: 'CAMIÓN DE 7 A 9 EJES',
+      titleLine2: '',
+      icon: 'local_shipping',
+      options: [
+        { id: 'truck7', label: '7', group: 'truck' },
+        { id: 'truck8', label: '8', group: 'truck' },
+        { id: 'truck9', label: '9', group: 'truck' }
+      ]
+    },
+    {
+      titleLine1: 'EJE EXCEDENTE SENCILLO',
+      titleLine2: '',
+      icon: 'settings_ethernet',
+      actions: [ { type: 'axle', value: 1, label: '+1' } ],
+      disabled: false
+    },
+    {
+      titleLine1: 'EJE DOBLE / EJE EXCEDENTE',
+      titleLine2: '',
+      icon: 'settings_input_component',
+      actions: [ { type: 'axle', value: 2, label: '+2' } ],
+      disabled: false
+    }
+  ];
+
+  selectedOption: any = null;
+  extraAxles = 0;
+  history: any[] = [];
+  future: any[] = [];
+
+  isActiveOption(opt: any): boolean {
+    return this.selectedOption?.id === opt.id;
+  }
+
+  onSelectCategory(row: any) {
+    // No-op for now; reserved for future
+  }
+
+  onSelectOption(opt: any) {
+    this.history.push({ selectedOption: this.selectedOption, extraAxles: this.extraAxles });
+    this.future = [];
+    this.selectedOption = opt;
+    // Map option to class/axles
+    const labelNum = Number(opt.label);
+    if (!isNaN(labelNum)) {
+      this.axlesCount = labelNum;
+    }
+    if (opt.group === 'moto') this.selectedClass = this.vehicleClasses.find(v => v.name.toLowerCase().includes('moto')) || this.selectedClass;
+    if (opt.group === 'auto') this.selectedClass = this.vehicleClasses.find(v => v.name.toLowerCase().includes('auto')) || this.selectedClass;
+    if (opt.group === 'bus') this.selectedClass = this.vehicleClasses.find(v => v.name.toLowerCase().includes('autobús')) || this.selectedClass;
+    if (opt.group === 'truck') this.selectedClass = this.vehicleClasses.find(v => v.name.toLowerCase().includes('camión')) || this.selectedClass;
+  }
+
+  onAction(act: any) {
+    if (act.type === 'axle') {
+      this.history.push({ selectedOption: this.selectedOption, extraAxles: this.extraAxles });
+      this.future = [];
+      this.extraAxles += act.value;
+      this.axlesCount += act.value;
+    }
+  }
+
+  onClear() {
+    this.history.push({ selectedOption: this.selectedOption, extraAxles: this.extraAxles });
+    this.future = [];
+    this.selectedOption = null;
+    this.extraAxles = 0;
+  }
+
+  onUndo() {
+    const prev = this.history.pop();
+    if (prev) {
+      this.future.push({ selectedOption: this.selectedOption, extraAxles: this.extraAxles });
+      this.selectedOption = prev.selectedOption;
+      this.extraAxles = prev.extraAxles;
+    }
+  }
+
+  onRedo() {
+    const next = this.future.pop();
+    if (next) {
+      this.history.push({ selectedOption: this.selectedOption, extraAxles: this.extraAxles });
+      this.selectedOption = next.selectedOption;
+      this.extraAxles = next.extraAxles;
+    }
+  }
+
+  canProcessKiosk(): boolean {
+    return !!(this.selectedOption || this.selectedClass);
+  }
+
+  onProcess() {
+    this.processPayment();
+    this.onClear();
+  }
+
+  triggerProcess() {
+    if (!this.isProcessing && this.selectedClass) {
+      this.processPayment();
+    }
+  }
+
+  // Payment-related methods
+  selectPaymentMethod(method: PaymentMethod) {
+    this.selectedPaymentMethod = method;
+    if (method.id !== 'cash') {
+      this.receivedAmount = this.calculateTotal();
+      this.calculateChange();
+    }
+  }
+
+  calculateChange() {
+    const total = this.calculateTotal();
+    this.changeAmount = this.receivedAmount - total;
+  }
+
+  setQuickAmount(amount: number) {
+    this.receivedAmount = amount;
+    this.calculateChange();
+  }
+
+  canProcessPayment(): boolean {
+    if (!this.selectedClass || !this.selectedPaymentMethod) {
+      return false;
+    }
+    
+    if (this.selectedPaymentMethod.id === 'cash') {
+      return this.receivedAmount >= this.calculateTotal();
+    }
+    
+    return true;
+  }
+
+  getPaymentIcon(paymentId: string): string {
+    switch (paymentId) {
+      case 'cash': return 'payments';
+      case 'rfid': return 'contactless';
+      case 'qr': return 'qr_code';
+      case 'exempt': return 'check_circle';
+      default: return 'payment';
+    }
+  }
+
+  generateFolio(): string {
+    return '0202513028';
+  }
+
+  generateNF(): string {
+    return '0202513820245334';
+  }
+
 }

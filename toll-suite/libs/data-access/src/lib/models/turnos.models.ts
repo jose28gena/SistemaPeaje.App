@@ -153,3 +153,38 @@ export interface RegistrarEventoTurnoDto {
   montoAfectado?: number;
   empleadoId?: number;
 }
+
+// Backend Turnos (operativo) - modelos alineados con API /api/Turnos
+export interface TurnoBackend {
+  id: number;
+  empleadoId: number;
+  empleadoNombre?: string;
+  estacionId: number;
+  estacionNombre?: string;
+  carrilId?: number;
+  fechaInicio: string;
+  fechaFin?: string;
+  montoInicialCaja: number;
+  montoFinalCaja?: number;
+  estado: string;
+  ventasEfectivo?: number;
+  efectivoContado?: number;
+  ventasPrepago?: number;
+  cantidadExentos?: number;
+  fechaCreacion: string;
+}
+
+export interface AbrirTurnoBackendDto {
+  empleadoId: number;
+  estacionId: number;
+  carrilId?: number;
+  montoInicialCaja: number;
+}
+
+export interface CerrarTurnoBackendDto {
+  montoFinalCaja: number;
+  ventasEfectivo?: number;
+  efectivoContado?: number;
+  ventasPrepago?: number;
+  cantidadExentos?: number;
+}

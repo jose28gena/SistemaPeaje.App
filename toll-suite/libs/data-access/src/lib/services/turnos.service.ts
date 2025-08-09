@@ -7,7 +7,10 @@ import {
   CreateTurnoDto,
   TurnoAsignacion,
   AsignarTurnoDto,
-  FinalizarTurnoDto 
+  FinalizarTurnoDto,
+  TurnoBackend,
+  AbrirTurnoBackendDto,
+  CerrarTurnoBackendDto 
 } from '../models/turnos.models';
 
 @Injectable({
@@ -25,6 +28,15 @@ export class TurnosService extends BaseApiService<Turno> {
   // Métodos específicos para turnos
   createTurno(turno: CreateTurnoDto): Observable<Turno> {
     return this.http.post<Turno>(`${this.baseUrl}/${this.endpoint}/abrir`, turno);
+  }
+
+  // Backend Turnos (operativo): abrir/cerrar con carril y cuadre
+  abrirTurno(data: AbrirTurnoBackendDto): Observable<TurnoBackend> {
+    return this.http.post<TurnoBackend>(`${this.baseUrl}/${this.endpoint}/abrir`, data);
+  }
+
+  cerrarTurno(id: number, data: CerrarTurnoBackendDto): Observable<TurnoBackend> {
+    return this.http.post<TurnoBackend>(`${this.baseUrl}/${this.endpoint}/${id}/cerrar`, data);
   }
 
   getTurnosPorEmpleado(empleadoId: number, fechaInicio?: Date, fechaFin?: Date): Observable<Turno[]> {

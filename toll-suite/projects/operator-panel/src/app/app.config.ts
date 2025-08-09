@@ -6,6 +6,7 @@ import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http'
 
 import { routes } from './app-routing.module';
 import { environment } from '../environments/environment';
+import { API_BASE_URL } from '@toll-suite/data-access';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -15,6 +16,7 @@ export const appConfig: ApplicationConfig = {
     provideServiceWorker('ngsw-worker.js', {
       enabled: environment.production,
       registrationStrategy: 'registerWhenStable:30000'
-    })
+  }),
+  { provide: API_BASE_URL, useValue: environment.apiUrl }
   ]
 };

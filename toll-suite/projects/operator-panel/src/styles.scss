@@ -1,7 +1,60 @@
-/* You can add global styles to this file, and also import other style files */
+/* Angular Material custom theme (M2) with light/dark support */
+@use '@angular/material' as mat;
 
+@include mat.core();
+
+// Brand palettes
+$primary: mat.define-palette(mat.$blue-palette, 700);
+$accent: mat.define-palette(mat.$amber-palette, A400, A200, A700);
+$warn: mat.define-palette(mat.$red-palette);
+
+$light-theme: mat.define-light-theme((
+  color: (
+    primary: $primary,
+    accent: $accent,
+    warn: $warn
+  ),
+  typography: mat.define-typography-config(),
+  density: 0
+));
+
+$dark-theme: mat.define-dark-theme((
+  color: (
+    primary: $primary,
+    accent: $accent,
+    warn: $warn
+  )
+));
+
+// Apply light theme by default
+@include mat.all-component-themes($light-theme);
+// Apply dark colors when .dark-theme is present
+.dark-theme { @include mat.all-component-colors($dark-theme); }
+
+/* Global base styles */
 html, body { height: 100%; }
 body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+
+/* Brand CSS variables for custom blocks */
+:root {
+  --brand-primary: #1976d2; /* blue 700 */
+  --brand-primary-dark: #0d47a1; /* blue 900 */
+  --brand-accent: #ffb300; /* amber 600 */
+  --brand-surface: #0e6fb3;
+}
+
+body.dark-theme {
+  --brand-primary: #90caf9; /* lighter for dark */
+  --brand-primary-dark: #42a5f5;
+  --brand-accent: #ffd54f;
+  --brand-surface: #0b4f80;
+}
+
+/* Dark mode surface adjustments */
+body.dark-theme {
+  background: #121212;
+  color: #e0e0e0;
+}
 
 /* Custom styles for toll system */
 .toll-container {

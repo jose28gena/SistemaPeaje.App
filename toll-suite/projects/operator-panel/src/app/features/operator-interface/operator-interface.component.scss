@@ -1,20 +1,55 @@
+/* Maximize viewport usage */
+:host {
+  display: block;
+  height: 100vh;
+  width: 100vw;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* Grid layout optimized for maximum space usage */
 .operator-layout {
   display: grid;
   grid-template-columns: 1fr;
   grid-template-rows: 
-    clamp(60px, 5vh, 80px) 
+    clamp(50px, 4vh, 65px) 
+    minmax(60px, 85px)
     1fr 
-    clamp(120px, 15vh, 160px) 
-    clamp(40px, 4vh, 60px);
+    clamp(32px, 3vh, 45px);
   grid-template-areas: 
     "header"
+    "turno"
     "main"
-    "sidebar"
     "footer";
   height: 100vh;
   width: 100vw;
   min-height: 600px;
   background-color: #f5f5f5;
+  overflow: hidden;
+}
+
+/* Fullscreen processing overlay */
+.processing-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  display: grid;
+  place-items: center;
+  z-index: 1000;
+
+  .processing-box {
+    background: #ffffff;
+    color: #333;
+    padding: 16px 22px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.25);
+
+    mat-icon { color: #1976d2; }
+  }
 }
 
 /* Header Toolbar (12x1) */
@@ -60,18 +95,427 @@
   }
 }
 
-/* Main Content Area */
+/* Main Content Area - Single column layout for maximum space usage */
 .main-content {
   grid-area: main;
   display: grid;
-  grid-template-columns: 
-    minmax(600px, 2fr) 
-    minmax(350px, 1fr);
-  gap: clamp(12px, 1.2vw, 24px);
-  padding: clamp(12px, 1.2vw, 24px);
-  overflow: hidden;
+  grid-template-columns: 1fr;
+  gap: clamp(10px, 1.2vw, 20px);
+  padding: clamp(6px, 1vw, 16px);
+  overflow: auto;
   height: 100%;
-  max-height: calc(100vh - 280px);
+  max-height: 100%;
+  
+  @media (min-width: 1400px) {
+    gap: clamp(16px, 1.5vw, 24px);
+    padding: clamp(12px, 1.2vw, 20px);
+  }
+  
+  @media (min-width: 1600px) {
+    gap: clamp(20px, 1.8vw, 28px);
+    padding: clamp(16px, 1.5vw, 24px);
+  }
+}
+
+/* Kiosk operations section - Responsive */
+.kiosk-operations {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(12px, 1.5vw, 24px);
+  overflow-y: auto;
+  min-height: 0;
+  width: 100%;
+}
+
+/* Turno Panel - More compact for space efficiency */
+.turno-panel {
+  grid-area: turno;
+  padding: 4px 16px;
+  background: #fafafa;
+  border-bottom: 1px solid #e0e0e0;
+  
+  mat-card {
+    padding: 0;
+    box-shadow: none !important;
+    background: transparent;
+  }
+  
+  mat-card-content {
+    padding: 8px !important;
+  }
+  
+  .turno-apertura,
+  .turno-cierre {
+    > div {
+      flex-wrap: wrap;
+      align-items: end;
+      gap: 8px;
+    }
+  }
+  
+  mat-form-field {
+    margin-bottom: 0;
+    
+    &:not(:last-of-type) {
+      margin-right: 8px;
+    }
+    
+    .mat-mdc-form-field-wrapper {
+      padding-bottom: 0 !important;
+    }
+  }
+  
+  button {
+    height: 36px;
+    font-size: 12px;
+    padding: 0 12px;
+  }
+}
+
+/* Kiosk-styled panel - Maximized responsive scaling */
+.kiosk-wrapper {
+  padding: clamp(6px, 1vw, 16px);
+  height: 100%;
+  min-height: 0;
+
+  .kiosk-title {
+    font-size: clamp(16px, 1.8vw, 22px);
+    margin: 0 0 clamp(4px, 0.8vw, 10px);
+    font-weight: 600;
+  }
+
+  .kiosk-frame {
+    background: var(--brand-surface);
+    border-radius: clamp(8px, 1.2vw, 16px);
+    padding: clamp(6px, 1vw, 12px);
+    box-shadow: inset 0 0 0 clamp(2px, 0.4vw, 4px) rgba(0,0,0,0.35);
+    height: calc(100% - clamp(20px, 2.6vw, 32px));
+    display: flex;
+    flex-direction: column;
+
+    .kiosk-inner {
+      background: color-mix(in srgb, var(--brand-surface) 85%, #ffffff 15%);
+      border-radius: clamp(4px, 0.8vw, 10px);
+      padding: clamp(6px, 1vw, 14px);
+      display: grid;
+      grid-template-columns: 1fr minmax(300px, 400px);
+      gap: clamp(6px, 1vw, 14px);
+      flex: 1;
+      min-height: 0;
+      
+      @media (min-width: 1400px) {
+        gap: 16px;
+        padding: 16px;
+        grid-template-columns: 1fr minmax(350px, 450px);
+      }
+    }
+
+    .kiosk-left {
+      display: flex;
+      flex-direction: column;
+      gap: clamp(6px, 0.8vw, 10px);
+
+      .row {
+        display: grid;
+        grid-template-columns: minmax(200px, 320px) clamp(20px, 1.8vw, 30px) 1fr;
+        gap: clamp(8px, 1vw, 14px);
+        align-items: center;
+        
+        @media (min-width: 1400px) {
+          grid-template-columns: minmax(280px, 380px) 25px 1fr;
+          gap: 14px;
+        }
+        
+        @media (min-width: 1600px) {
+          grid-template-columns: minmax(320px, 420px) 30px 1fr;
+          gap: 16px;
+        }
+      }
+
+      .category-btn {
+        height: clamp(50px, 6vh, 70px);
+        background: #24323c;
+        color: #fff;
+        border: 2px solid #000;
+        border-radius: clamp(6px, 0.8vw, 10px);
+        display: flex;
+        align-items: center;
+        gap: clamp(8px, 1vw, 14px);
+        padding: 0 clamp(12px, 1.5vw, 18px);
+        text-align: left;
+        font-size: clamp(11px, 1.2vw, 14px);
+
+        .category-icon { 
+          font-size: clamp(24px, 2.5vw, 32px); 
+          color: var(--brand-accent); 
+        }
+        .category-text {
+          .line1 { 
+            font-weight: 700; 
+            font-size: clamp(12px, 1.3vw, 15px); 
+          }
+          .line2 { 
+            font-size: clamp(10px, 1.1vw, 13px); 
+            opacity: .9; 
+          }
+        }
+      }
+
+      .arrow { 
+        color: #cfd8dc; 
+        font-size: clamp(20px, 2vw, 28px); 
+        text-align: center; 
+      }
+
+      .options {
+        display: grid;
+        grid-auto-flow: column;
+        gap: clamp(6px, 0.8vw, 12px);
+        justify-content: start;
+        overflow-x: auto;
+      }
+
+      .option-btn {
+        height: clamp(42px, 5vh, 58px);
+        border-radius: clamp(6px, 0.8vw, 10px);
+        border: 2px solid #000;
+        background: #1f2933;
+        color: #fff;
+        font-weight: 700;
+        min-width: clamp(60px, 7vw, 90px);
+        font-size: clamp(11px, 1.2vw, 14px);
+        padding: 0 clamp(8px, 1vw, 16px);
+        &.active { outline: 3px solid var(--brand-accent); }
+      }
+
+      .controls-row {
+        display: grid;
+        grid-template-columns: repeat(3, clamp(55px, 7vw, 85px)) 1fr;
+        gap: clamp(6px, 0.8vw, 10px);
+        margin-top: clamp(4px, 0.8vw, 8px);
+
+        .control-btn {
+          height: clamp(42px, 5vh, 58px);
+          border-radius: clamp(6px, 0.8vw, 10px);
+          border: 2px solid #000;
+          background: #b0bec5;
+          font-weight: 800;
+          font-size: clamp(11px, 1.2vw, 14px);
+        }
+
+        .process-btn {
+          height: clamp(42px, 5vh, 58px);
+          border-radius: clamp(6px, 0.8vw, 10px);
+          border: 2px solid #000;
+          background: var(--brand-primary-dark);
+          color: #fff;
+          font-weight: 800;
+          justify-self: end;
+          min-width: clamp(140px, 16vw, 200px);
+          font-size: clamp(12px, 1.3vw, 16px);
+        }
+      }
+    }
+
+    .payment-section {
+      display: flex;
+      flex-direction: column;
+      gap: clamp(8px, 1vw, 16px);
+      background: color-mix(in srgb, var(--brand-surface) 95%, #ffffff 5%);
+      border-radius: clamp(4px, 0.8vw, 10px);
+      padding: clamp(8px, 1vw, 16px);
+      border: 1px solid rgba(0,0,0,0.1);
+
+      .section-title {
+        font-size: clamp(12px, 1.2vw, 16px);
+        font-weight: 600;
+        margin: 0 0 clamp(4px, 0.8vw, 8px) 0;
+        color: var(--brand-primary);
+      }
+
+      .receipt-preview {
+        .ticket-display {
+          background: #fff;
+          border: 2px solid #000;
+          padding: clamp(6px, 0.8vw, 12px);
+          border-radius: clamp(3px, 0.5vw, 6px);
+          font-family: 'Courier New', monospace;
+          font-size: clamp(8px, 0.9vw, 11px);
+          line-height: 1.2;
+
+          .ticket-header {
+            margin-bottom: clamp(4px, 0.6vw, 8px);
+            
+            .ticket-info {
+              margin: clamp(1px, 0.2vw, 3px) 0;
+            }
+            
+            .ticket-separator {
+              margin: clamp(2px, 0.4vw, 6px) 0;
+              font-weight: bold;
+            }
+          }
+
+          .ticket-details {
+            .vehicle-info {
+              font-weight: bold;
+              margin-bottom: clamp(3px, 0.5vw, 6px);
+            }
+
+            .amount-breakdown {
+              .amount-line {
+                display: flex;
+                justify-content: space-between;
+                margin: clamp(1px, 0.2vw, 3px) 0;
+                
+                &.total {
+                  font-weight: bold;
+                  border-top: 1px solid #000;
+                  padding-top: clamp(1px, 0.2vw, 3px);
+                  margin-top: clamp(3px, 0.5vw, 6px);
+                }
+              }
+            }
+          }
+        }
+      }
+
+      .payment-methods {
+        .payment-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: clamp(4px, 0.6vw, 8px);
+        }
+
+        .payment-btn {
+          height: clamp(35px, 4vh, 45px);
+          border-radius: clamp(4px, 0.6vw, 8px);
+          border: 2px solid #000;
+          background: #37474f;
+          color: #fff;
+          font-weight: 600;
+          font-size: clamp(9px, 1vw, 12px);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: clamp(1px, 0.2vw, 3px);
+          cursor: pointer;
+          transition: all 0.2s ease;
+
+          &.active {
+            background: var(--brand-primary);
+            outline: 2px solid var(--brand-accent);
+          }
+
+          &:hover {
+            background: #455a64;
+          }
+
+          mat-icon {
+            font-size: clamp(12px, 1.3vw, 16px);
+          }
+
+          .hotkey {
+            font-size: clamp(7px, 0.8vw, 10px);
+            opacity: 0.8;
+          }
+        }
+      }
+
+      .amount-entry {
+        .amount-input {
+          mat-form-field {
+            width: 100%;
+            
+            .mat-mdc-form-field-wrapper {
+              padding-bottom: 0 !important;
+            }
+          }
+        }
+
+        .quick-amounts {
+          display: flex;
+          gap: clamp(4px, 0.6vw, 8px);
+          margin-top: clamp(6px, 0.8vw, 10px);
+          flex-wrap: wrap;
+
+          .quick-btn {
+            height: clamp(24px, 3vh, 32px);
+            padding: 0 clamp(6px, 0.8vw, 12px);
+            border-radius: clamp(3px, 0.5vw, 6px);
+            border: 1px solid #ccc;
+            background: #f5f5f5;
+            font-size: clamp(8px, 0.9vw, 11px);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+
+            &:hover {
+              background: #e0e0e0;
+            }
+          }
+        }
+
+        .change-display {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-top: clamp(6px, 0.8vw, 10px);
+          padding: clamp(4px, 0.6vw, 8px);
+          background: rgba(var(--brand-accent-rgb), 0.1);
+          border-radius: clamp(3px, 0.5vw, 6px);
+          border-left: 3px solid var(--brand-accent);
+
+          .change-label {
+            font-weight: 600;
+            font-size: clamp(9px, 1vw, 12px);
+          }
+
+          .change-value {
+            font-weight: bold;
+            font-size: clamp(10px, 1.1vw, 14px);
+            color: var(--brand-accent);
+          }
+        }
+      }
+
+      .process-payment {
+        margin-top: auto;
+
+        .process-payment-btn {
+          width: 100%;
+          height: clamp(40px, 5vh, 50px);
+          border-radius: clamp(4px, 0.6vw, 8px);
+          border: 2px solid #000;
+          background: var(--brand-primary);
+          color: #fff;
+          font-weight: 700;
+          font-size: clamp(10px, 1.1vw, 14px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: clamp(4px, 0.6vw, 8px);
+          cursor: pointer;
+          transition: all 0.2s ease;
+
+          &:hover:not(:disabled) {
+            background: var(--brand-primary-dark);
+            transform: translateY(-1px);
+          }
+
+          &:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+          }
+
+          mat-icon {
+            font-size: clamp(14px, 1.4vw, 18px);
+          }
+        }
+      }
+    }
+  }
 }
 
 /* Vehicle Panel (8 columns) */
@@ -83,20 +527,21 @@
     height: 100%;
     display: flex;
     flex-direction: column;
-    padding: clamp(12px, 1.5vw, 24px);
+    padding: clamp(8px, 1.2vw, 18px);
     border-radius: clamp(6px, 0.8vw, 12px);
 
     mat-card-content {
       flex: 1;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: clamp(10px, 1.2vw, 16px);
+      padding: clamp(8px, 1vw, 14px) !important;
     }
   }
 
   .camera-section {
     .camera-feed {
-      height: clamp(150px, 18vh, 250px);
+      height: clamp(160px, 20vh, 280px);
       background: #000;
       border-radius: clamp(6px, 0.8vw, 12px);
       position: relative;
@@ -122,9 +567,9 @@
 
   .ocr-section {
     background: #e3f2fd;
-    padding: clamp(10px, 1.2vw, 16px);
+    padding: clamp(8px, 1vw, 14px);
     border-radius: clamp(6px, 0.8vw, 12px);
-    margin-bottom: clamp(12px, 1.2vw, 20px);
+    margin-bottom: clamp(8px, 1vw, 16px);
 
     .ocr-result {
       display: flex;
@@ -187,10 +632,44 @@
     }
 
     .class-button {
-      height: clamp(35px, 4vh, 50px);
-      border-radius: clamp(3px, 0.5vw, 6px);
-      font-size: clamp(10px, 0.9vw, 13px);
-      padding: clamp(4px, 0.5vw, 8px);
+      height: clamp(35px, 4.5vh, 52px);
+      border-radius: clamp(4px, 0.6vw, 8px);
+      font-size: clamp(10px, 1vw, 14px);
+      font-weight: 500;
+      padding: clamp(4px, 0.6vw, 10px);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: clamp(3px, 0.5vw, 6px);
+      
+      &:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+      
+      &:active {
+        transform: translateY(0);
+      }
+      
+      &.selected {
+        background: var(--primary-color) !important;
+        color: white !important;
+        box-shadow: 0 3px 8px rgba(var(--primary-rgb), 0.3);
+      }
+      
+      mat-icon {
+        font-size: clamp(16px, 1.8vw, 20px);
+      }
+      
+      .hotkey {
+        font-size: clamp(8px, 0.8vw, 11px);
+        opacity: 0.7;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 1px 3px;
+        border-radius: 2px;
+        line-height: 1;
+      }
     }
   }
 
@@ -237,22 +716,22 @@
 
   .rate-section {
     background: #f3e5f5;
-    padding: clamp(12px, 1.5vw, 20px);
+    padding: clamp(8px, 1.2vw, 16px);
     border-radius: clamp(6px, 0.8vw, 12px);
-    margin-bottom: clamp(12px, 1.2vw, 20px);
+    margin-bottom: clamp(8px, 1vw, 16px);
 
     .rate-details {
       .rate-line {
         display: flex;
         justify-content: space-between;
-        margin-bottom: clamp(6px, 0.8vw, 12px);
-        font-size: clamp(12px, 1.1vw, 16px);
+        margin-bottom: clamp(4px, 0.6vw, 8px);
+        font-size: clamp(11px, 1vw, 15px);
 
         &.total {
           font-weight: bold;
-          font-size: clamp(14px, 1.3vw, 18px);
-          margin-top: clamp(6px, 0.8vw, 12px);
-          padding-top: clamp(6px, 0.8vw, 12px);
+          font-size: clamp(13px, 1.2vw, 17px);
+          margin-top: clamp(4px, 0.6vw, 8px);
+          padding-top: clamp(4px, 0.6vw, 8px);
 
           .value {
             color: #2e7d32;
@@ -264,42 +743,140 @@
 
   .payment-methods {
     h4 {
-      margin: 0 0 12px 0;
-      font-size: clamp(12px, 1.1vw, 16px);
-      font-weight: 500;
+      margin: 0 0 clamp(12px, 1.5vw, 16px) 0;
+      font-size: clamp(13px, 1.2vw, 17px);
+      font-weight: 600;
+      color: var(--primary-color);
     }
 
     .payment-buttons {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: clamp(6px, 0.8vw, 12px);
-      margin-bottom: clamp(12px, 1.2vw, 20px);
+      gap: clamp(8px, 1vw, 14px);
+      margin-bottom: clamp(16px, 1.5vw, 24px);
+    }
+
+    .numpad {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(54px, 1fr));
+      gap: clamp(6px, 0.8vw, 10px);
+      margin-top: clamp(12px, 1.2vw, 16px);
+      padding: clamp(12px, 1.5vw, 20px);
+      background: rgba(var(--primary-rgb), 0.05);
+      border-radius: clamp(6px, 0.8vw, 12px);
+
+      .nkey {
+        height: clamp(48px, 6vh, 60px);
+        font-size: clamp(16px, 1.8vw, 20px);
+        font-weight: 500;
+        border-radius: clamp(4px, 0.6vw, 8px);
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        
+        &:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+      }
+
+      .wide { 
+        grid-column: span 3; 
+        font-size: clamp(14px, 1.6vw, 18px);
+      }
     }
 
     .payment-button {
-      height: clamp(45px, 5vh, 65px);
-      border-radius: clamp(3px, 0.5vw, 6px);
-      font-size: clamp(10px, 1vw, 14px);
+      height: clamp(50px, 6vh, 70px);
+      border-radius: clamp(4px, 0.6vw, 8px);
+      font-size: clamp(12px, 1.2vw, 16px);
+      font-weight: 500;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: clamp(6px, 0.8vw, 10px);
+      
+      &:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+      
+      &.selected {
+        background: var(--primary-color) !important;
+        color: white !important;
+        box-shadow: 0 3px 8px rgba(var(--primary-rgb), 0.3);
+      }
+      
+      mat-icon {
+        font-size: clamp(20px, 2.2vw, 24px);
+      }
 
       .hotkey {
-        font-size: clamp(8px, 0.8vw, 11px);
+        font-size: clamp(9px, 1vw, 12px);
+        opacity: 0.7;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 2px 4px;
+        border-radius: 3px;
+        line-height: 1;
       }
     }
   }
 
   .payment-details {
     .amount-field {
-      padding: clamp(8px, 1vw, 14px) clamp(10px, 1.2vw, 16px);
-      border-radius: clamp(3px, 0.5vw, 6px);
-      font-size: clamp(12px, 1.1vw, 16px);
+      padding: clamp(12px, 1.5vw, 18px) clamp(14px, 1.8vw, 20px);
+      border-radius: clamp(4px, 0.6vw, 8px);
+      font-size: clamp(14px, 1.4vw, 18px);
+      font-weight: 500;
+      border: 2px solid rgba(var(--primary-rgb), 0.2);
+      transition: border-color 0.2s ease;
+      
+      &:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
+      }
+    }
+
+    .quick-cash {
+      display: flex;
+      gap: clamp(6px, 0.8vw, 10px);
+      margin-top: clamp(10px, 1.2vw, 14px);
+      flex-wrap: wrap;
+      
+      button {
+        height: clamp(36px, 4vh, 48px);
+        padding: 0 clamp(10px, 1.2vw, 16px);
+        border-radius: clamp(4px, 0.5vw, 6px);
+        font-size: clamp(11px, 1.1vw, 14px);
+        font-weight: 500;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        
+        &:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+        }
+      }
     }
 
     .change-amount {
       display: flex;
       justify-content: space-between;
-      padding: clamp(6px, 0.8vw, 12px) 0;
-      font-weight: 500;
-      font-size: clamp(12px, 1.1vw, 16px);
+      align-items: center;
+      padding: clamp(12px, 1.5vw, 18px) clamp(8px, 1vw, 12px);
+      margin-top: clamp(12px, 1.5vw, 16px);
+      font-weight: 600;
+      font-size: clamp(14px, 1.4vw, 18px);
+      background: rgba(var(--accent-rgb), 0.1);
+      border-radius: clamp(4px, 0.6vw, 8px);
+      border-left: 4px solid var(--accent-color);
+      
+      .label {
+        color: var(--text-secondary);
+      }
+      
+      .value {
+        color: var(--accent-color);
+        font-size: clamp(16px, 1.6vw, 20px);
+      }
     }
   }
 
@@ -307,73 +884,24 @@
     margin-top: auto;
 
     .process-button {
-      height: clamp(45px, 5vh, 70px);
+      height: clamp(42px, 4.5vh, 58px);
       border-radius: clamp(3px, 0.5vw, 6px);
-      font-size: clamp(14px, 1.3vw, 18px);
+      font-size: clamp(13px, 1.2vw, 17px);
+      font-weight: 600;
     }
   }
 }
 
-/* Incidents Sidebar (12x3) */
-.incidents-sidebar {
-  grid-area: sidebar;
-  padding: 0 clamp(12px, 1.2vw, 24px);
-
-  .sidebar-card {
-    padding: clamp(10px, 1.2vw, 18px);
-
-    .alerts-section {
-      margin-bottom: 16px;
-
-      .alert-item {
-        display: flex;
-        align-items: center;
-        gap: clamp(6px, 0.8vw, 12px);
-        padding: clamp(4px, 0.6vw, 8px) 0;
-        font-size: clamp(11px, 1vw, 14px);
-
-        mat-icon {
-          font-size: clamp(14px, 1.5vw, 20px);
-          width: clamp(14px, 1.5vw, 20px);
-          height: clamp(14px, 1.5vw, 20px);
-        }
-      }
-
-      .incident-button {
-        width: 100%;
-        margin-top: clamp(8px, 1vw, 16px);
-        padding: clamp(6px, 0.8vw, 12px);
-        border-radius: clamp(3px, 0.5vw, 6px);
-        font-size: clamp(10px, 0.9vw, 13px);
-      }
-    }
-
-    .shift-stats {
-      h4 {
-        margin: clamp(12px, 1.2vw, 20px) 0 clamp(8px, 1vw, 14px) 0;
-        font-size: clamp(12px, 1.1vw, 16px);
-      }
-
-      .stat-item {
-        display: flex;
-        justify-content: space-between;
-        padding: clamp(3px, 0.5vw, 6px) 0;
-        font-size: clamp(10px, 1vw, 14px);
-      }
-    }
-  }
-}
-
-/* Footer Status Bar (12x1) */
+/* Footer Status Bar - Compact */
 .footer-status {
   grid-area: footer;
   background: #263238;
   color: white;
-  padding: clamp(6px, 0.8vw, 12px) clamp(12px, 1.2vw, 24px);
+  padding: clamp(4px, 0.6vw, 8px) clamp(8px, 1vw, 16px);
 
   .status-indicators {
     display: flex;
-    gap: clamp(16px, 2vw, 32px);
+    gap: clamp(12px, 1.5vw, 24px);
     justify-content: center;
 
     .status-item {
@@ -409,9 +937,6 @@
 /* Ultra-wide monitors (21:9 and 32:9) */
 @media (min-aspect-ratio: 21/9) {
   .main-content {
-    grid-template-columns: 
-      minmax(700px, 2.5fr) 
-      minmax(400px, 1fr);
     gap: clamp(20px, 2vw, 40px);
   }
 
@@ -449,9 +974,6 @@
 /* Smaller desktop monitors (1366x768, 1600x900) */
 @media (max-width: 1599px) {
   .main-content {
-    grid-template-columns: 
-      minmax(500px, 2fr) 
-      minmax(300px, 1fr);
     gap: clamp(8px, 1vw, 16px);
   }
 
@@ -474,8 +996,8 @@
   .operator-layout {
     grid-template-areas: 
       "header"
+      "turno"
       "main"
-      "sidebar"
       "footer";
   }
 
@@ -537,17 +1059,114 @@
     grid-template-rows: auto auto 1fr auto;
     grid-template-areas: 
       "header"
-      "sidebar"
+      "turno"
       "main"
       "footer";
   }
+}
 
-  .incidents-sidebar {
-    padding: clamp(8px, 1vw, 16px);
+/* Footer Status Bar */
+.footer-status {
+  grid-area: footer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 16px;
+  background: #eceff1;
+  border-top: 1px solid #cfd8dc;
+  font-size: 12px;
+  color: #546e7a;
+  
+  .status-left {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+  }
+  
+  .status-center {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      
+      &.online { color: #2e7d32; }
+      &.warning { color: #f57c00; }
+      &.offline { color: #d32f2f; }
+      
+      mat-icon {
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+      }
+    }
+  }
+  
+  .status-right {
+    font-weight: 500;
   }
 }
 
-/* Animation improvements */
+/* Responsive breakpoints for large screens */
+@media (min-width: 1200px) {
+  .main-content {
+    padding: 24px 32px;
+    gap: 24px;
+  }
+  
+  .kiosk-wrapper .kiosk-frame .kiosk-inner {
+    padding: 20px;
+    gap: 24px;
+  }
+}
+
+@media (min-width: 1400px) {
+  .main-content {
+    padding: 32px 40px;
+    gap: 32px;
+  }
+  
+  .turno-panel {
+    padding: 8px 32px;
+  }
+}
+
+@media (min-width: 1600px) {
+  .main-content {
+    padding: 40px 48px;
+    gap: 40px;
+  }
+  
+  .kiosk-wrapper .kiosk-title {
+    font-size: 26px;
+  }
+  
+  .turno-panel {
+    padding: 10px 40px;
+    
+    button {
+      height: 40px;
+      font-size: 14px;
+    }
+    
+    mat-form-field {
+      .mat-mdc-form-field-wrapper {
+        padding-bottom: 4px !important;
+      }
+    }
+  }
+}
+
+@media (min-width: 1920px) {
+  .main-content {
+    padding: 48px 56px;
+    gap: 48px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
