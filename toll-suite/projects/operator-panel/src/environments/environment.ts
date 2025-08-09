@@ -5,6 +5,7 @@ export const environment = {
   features: {
     enableRealTimeMonitoring: true,
     enableVehicleRecognition: true,
-    enablePaymentProcessing: true
+  enablePaymentProcessing: true,
+  enableGpt5Preview: true
   }
 };

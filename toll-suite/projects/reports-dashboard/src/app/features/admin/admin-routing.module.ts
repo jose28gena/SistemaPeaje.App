@@ -5,6 +5,7 @@ import { AdminLayoutComponent } from './components/admin-layout/admin-layout.com
 import { EstacionesComponent } from './pages/estaciones/estaciones.component';
 import { CarrilesComponent } from './pages/carriles/carriles.component';
 import { TiposVehiculoComponent } from './pages/tipos-vehiculo/tipos-vehiculo.component';
+// Import standalone component
 import { TiposPagoComponent } from './pages/tipos-pago/tipos-pago.component';
 import { TiposClienteComponent } from './pages/tipos-cliente/tipos-cliente.component';
 import { TarifasComponent } from './pages/tarifas/tarifas.component';

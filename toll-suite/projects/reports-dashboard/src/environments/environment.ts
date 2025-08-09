@@ -4,6 +4,7 @@ export const environment = {
   features: {
     enableAdvancedReports: true,
     enableDataExport: true,
-    enableRealTimeUpdates: true
+  enableRealTimeUpdates: true,
+  enableGpt5Preview: true
   }
 };

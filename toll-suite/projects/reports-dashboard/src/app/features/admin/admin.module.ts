@@ -29,7 +29,7 @@ import { TiposVehiculoService } from './tipos-vehiculo/services/tipos-vehiculo.s
 import { EstacionesComponent } from './pages/estaciones/estaciones.component';
 import { CarrilesComponent } from './pages/carriles/carriles.component';
 import { TiposVehiculoComponent } from './pages/tipos-vehiculo/tipos-vehiculo.component';
-import { TiposPagoComponent } from './pages/tipos-pago/tipos-pago.component';
+// TiposPagoComponent is now standalone - imported in routing
 import { TiposClienteComponent } from './pages/tipos-cliente/tipos-cliente.component';
 import { ClientesComponent } from './pages/clientes/clientes.component';
 import { EmpleadosComponent } from './pages/empleados/empleados.component';
@@ -56,7 +56,7 @@ import { TestComponent } from './pages/test/test.component';
     EstacionesComponent,
     CarrilesComponent,
     TiposVehiculoComponent,
-    TiposPagoComponent,
+    // TiposPagoComponent is now standalone
     TiposClienteComponent,
     ClientesComponent,
     EmpleadosComponent,
