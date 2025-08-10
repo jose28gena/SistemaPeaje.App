@@ -25,7 +25,9 @@ import {
   EmpleadosService,
   Estacion,
   Carril,
-  Empleado
+  Empleado,
+  ComandosPlcService,
+  ComandoAbrirBarreraDto
 } from '@toll-suite/data-access';
 
 interface VehicleClass {
@@ -221,7 +223,7 @@ interface SystemStatus {
                     <button class="control-btn" (click)="onClear()" aria-label="Clear">C</button>
                     <button class="control-btn" (click)="onUndo()" aria-label="Undo"><mat-icon>undo</mat-icon></button>
                     <button class="control-btn" (click)="onRedo()" aria-label="Redo"><mat-icon>redo</mat-icon></button>
-                    <button class="process-btn" [disabled]="!canProcessKiosk()" (click)="onProcess()">PROCESAR</button>
+                  
                   </div>
                 </div>
 
@@ -409,6 +411,7 @@ export class OperatorInterfaceComponent implements OnInit {
     private turnosService: TurnosService,
     private estacionesService: EstacionesService,
     private empleadosService: EmpleadosService,
+    private comandosPlcService: ComandosPlcService,
     private dialog: MatDialog,
     private snack: MatSnackBar
   ) {}
@@ -483,49 +486,77 @@ export class OperatorInterfaceComponent implements OnInit {
 
 
   processPayment() {
-    if (this.isProcessing || !this.selectedClass) return;
-    
-    // Open payment modal
-    const dialogRef = this.dialog.open(PaymentModalComponent, {
-      width: '600px',
-      maxWidth: '90vw',
-      maxHeight: '90vh',
-      disableClose: true,
-      data: {
-        selectedClass: this.selectedClass,
-        baseRate: this.calculateBaseRate(),
-        tax: this.calculateTax(),
-        total: this.calculateTotal(),
-        paymentMethods: this.paymentMethods
-      }
+    if (this.isProcessing || !this.selectedClass || !this.selectedPaymentMethod) {
+      return;
+    }
+
+    // Validar pago en efectivo
+    if (this.selectedPaymentMethod.id === 'cash' && this.receivedAmount < this.calculateTotal()) {
+      this.snack.open('El monto recibido es insuficiente', 'OK', { duration: 3000 });
+      return;
+    }
+
+    this.isProcessing = true;
+    this.state = 'processing';
+
+    console.log('Procesando pago...', {
+      class: this.selectedClass,
+      method: this.selectedPaymentMethod,
+      total: this.calculateTotal(),
+      received: this.receivedAmount,
+      change: this.changeAmount
     });
 
-    dialogRef.afterClosed().subscribe(result => {
-      if (result) {
-        // Payment was processed
-        this.isProcessing = true;
-        this.state = 'processing';
-        
-        console.log('Procesando pago...', {
-          class: this.selectedClass,
-          method: result.method,
-          amount: result.amount,
-          received: result.received,
-          change: result.change
-        });
-        
-        // Simulate ticket print and barrier open
-        setTimeout(() => {
-          this.emitTicket();
-          this.openBarrier();
-          this.state = 'ticket';
+    // Simular procesamiento de pago
+    setTimeout(() => {
+      // Procesar ticket
+      this.emitTicket();
+      
+      // Llamar endpoint para abrir barrera
+      this.openBarrierWithApi();
+      
+    }, 600);
+  }
+
+  private openBarrierWithApi() {
+    const comando: ComandoAbrirBarreraDto = {
+      casetaIp: '127.0.0.1', // IP del simulador/PLC
+      coilAddress: 96, // Dirección del coil para abrir barrera
+      unitId: 1,
+      carrilId: this.turnoActivo?.carrilId || 1,
+      observaciones: `Apertura automática - Clase: ${this.selectedClass?.name} - Pago: ${this.selectedPaymentMethod?.name}`
+    };
+
+    this.comandosPlcService.abrirBarrera(comando).subscribe({
+      next: (resultado) => {
+        if (resultado.exitoso) {
+          console.log('✅ Barrera abierta correctamente:', resultado);
           this.snack.open('Pago procesado. Ticket emitido y barrera abierta.', 'OK', { duration: 2500 });
-          setTimeout(() => {
-            this.resetTransaction();
-            this.state = 'idle';
-            this.isProcessing = false;
-          }, 1200);
-        }, 600);
+          this.systemStatus.plc = 'online';
+        } else {
+          console.error('❌ Error al abrir barrera:', resultado);
+          this.snack.open(`Error al abrir barrera: ${resultado.mensaje}`, 'OK', { duration: 4000 });
+          this.systemStatus.plc = 'offline';
+        }
+        
+        this.state = 'ticket';
+        setTimeout(() => {
+          this.resetTransaction();
+          this.state = 'idle';
+          this.isProcessing = false;
+        }, 1200);
+      },
+      error: (error) => {
+        console.error('❌ Error de comunicación con API:', error);
+        this.snack.open('Error de comunicación con el sistema PLC', 'OK', { duration: 4000 });
+        this.systemStatus.plc = 'offline';
+        
+        this.state = 'ticket';
+        setTimeout(() => {
+          this.resetTransaction();
+          this.state = 'idle';
+          this.isProcessing = false;
+        }, 1200);
       }
     });
   }
@@ -571,6 +602,11 @@ export class OperatorInterfaceComponent implements OnInit {
 
   private resetTransaction() {
     this.selectedClass = this.suggestedClass;
+    this.selectedPaymentMethod = null;
+    this.receivedAmount = 0;
+    this.changeAmount = 0;
+    this.selectedOption = null;
+    this.extraAxles = 0;
   }
 
   // Simulate PLC loop trigger and OCR/LPR
@@ -593,11 +629,12 @@ export class OperatorInterfaceComponent implements OnInit {
     this.systemStatus.printer = 'online';
   }
 
-  private openBarrier() {
-    // Placeholder for PLC open call
-    this.systemStatus.plc = 'online';
-    setTimeout(() => (this.systemStatus.plc = 'warning'), 2000);
-  }
+  // Método anterior comentado - ahora usamos openBarrierWithApi()
+  // private openBarrier() {
+  //   // Placeholder for PLC open call
+  //   this.systemStatus.plc = 'online';
+  //   setTimeout(() => (this.systemStatus.plc = 'warning'), 2000);
+  // }
 
   // Turno helpers
   loadEstaciones() {

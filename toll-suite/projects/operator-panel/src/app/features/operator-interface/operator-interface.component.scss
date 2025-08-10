@@ -175,7 +175,7 @@
 /* Kiosk-styled panel - Maximized responsive scaling */
 .kiosk-wrapper {
   padding: clamp(6px, 1vw, 16px);
-  height: 100%;
+  height: 88%;
   min-height: 0;
 
   .kiosk-title {
@@ -290,7 +290,7 @@
 
       .controls-row {
         display: grid;
-        grid-template-columns: repeat(3, clamp(55px, 7vw, 85px)) 1fr;
+        grid-template-columns: repeat(3, clamp(55px, 7vw, 85px));
         gap: clamp(6px, 0.8vw, 10px);
         margin-top: clamp(4px, 0.8vw, 8px);
 
@@ -301,18 +301,6 @@
           background: #b0bec5;
           font-weight: 800;
           font-size: clamp(11px, 1.2vw, 14px);
-        }
-
-        .process-btn {
-          height: clamp(42px, 5vh, 58px);
-          border-radius: clamp(6px, 0.8vw, 10px);
-          border: 2px solid #000;
-          background: var(--brand-primary-dark);
-          color: #fff;
-          font-weight: 800;
-          justify-self: end;
-          min-width: clamp(140px, 16vw, 200px);
-          font-size: clamp(12px, 1.3vw, 16px);
         }
       }
     }

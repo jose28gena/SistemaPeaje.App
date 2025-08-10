@@ -17,3 +17,5 @@ export * from './lib/services/turno-eventos.service';
 export * from './lib/services/turno-templates.service';
 export * from './lib/services/turno-liquidaciones.service';
 export * from './lib/models/turnos.models';
+// Comandos PLC Service
+export * from './lib/services/comandos-plc.service';
