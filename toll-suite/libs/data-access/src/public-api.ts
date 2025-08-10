@@ -19,3 +19,5 @@ export * from './lib/services/turno-liquidaciones.service';
 export * from './lib/models/turnos.models';
 // Comandos PLC Service
 export * from './lib/services/comandos-plc.service';
+// Lane Semaphore Service
+export * from './lib/services/lane-semaphore.service';

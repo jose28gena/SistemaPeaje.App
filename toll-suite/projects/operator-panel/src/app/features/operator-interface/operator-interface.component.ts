@@ -15,6 +15,7 @@ import { FormsModule } from '@angular/forms';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { UiKitModule } from '@toll-suite/ui-kit';
 import { PaymentModalComponent } from './payment-modal.component';
 import { 
   TurnosService, 
@@ -27,7 +28,8 @@ import {
   Carril,
   Empleado,
   ComandosPlcService,
-  ComandoAbrirBarreraDto
+  ComandoAbrirBarreraDto,
+  LaneSemaphoreService
 } from '@toll-suite/data-access';
 
 interface VehicleClass {
@@ -70,7 +72,8 @@ interface SystemStatus {
     MatDividerModule,
     MatDialogModule,
     MatSnackBarModule,
-    MatTooltipModule,
+  MatTooltipModule,
+  UiKitModule,
     FormsModule
   ],
   template: `
@@ -301,6 +304,18 @@ interface SystemStatus {
                       COBRAR - \${{ calculateTotal().toFixed(2) }}
                     </button>
                   </div>
+
+                  <!-- Incidents Semaphore -->
+                  <div class="incidents-semaphore">
+                    <ui-incident-semaphore
+                      [state]="semaphoreState"
+                      [totals]="semaphoreTotals"
+                      [lastChange]="semaphoreLastChange"
+                      (openPanel)="openIncidentPanel()"
+                      (openHealth)="openHealthSummary()"
+                      (ack)="ackIncidents($event)"
+                      (filter)="openIncidentPanel($event)"></ui-incident-semaphore>
+                  </div>
                 </div>
               </div>
             </div>
@@ -412,6 +427,7 @@ export class OperatorInterfaceComponent implements OnInit {
     private estacionesService: EstacionesService,
     private empleadosService: EmpleadosService,
     private comandosPlcService: ComandosPlcService,
+    private laneSemaphoreService: LaneSemaphoreService,
     private dialog: MatDialog,
     private snack: MatSnackBar
   ) {}
@@ -429,13 +445,17 @@ export class OperatorInterfaceComponent implements OnInit {
     this.loadEstaciones();
     this.loadEmpleados();
 
-    // Try to load active turno from localStorage (if opened previously)
+  // Try to load active turno from localStorage (if opened previously)
     try {
       const saved = localStorage.getItem('turnoActivo');
       if (saved) {
         this.turnoActivo = JSON.parse(saved);
       }
     } catch {}
+
+  // Initial load of semaphore state
+  const laneId = this.turnoActivo?.carrilId ?? this.selectedCarrilId ?? 1;
+  this.refreshSemaphore(laneId);
   }
 
   @HostListener('window:keydown', ['$event'])
@@ -607,6 +627,36 @@ export class OperatorInterfaceComponent implements OnInit {
     this.changeAmount = 0;
     this.selectedOption = null;
     this.extraAxles = 0;
+  }
+
+  // Incident semaphore state/logic
+  semaphoreState: 'green'|'yellow'|'red'|'gray' = 'yellow';
+  semaphoreTotals = { ok: 229, warn: 13, crit: 2, all: 244 };
+  semaphoreLastChange?: Date;
+
+  refreshSemaphore(laneId: number) {
+    this.laneSemaphoreService.getSemaphore(laneId).subscribe({
+      next: (data) => {
+        this.semaphoreState = data.state ?? 'gray';
+        this.semaphoreTotals = data.totals ?? { ok: 0, warn: 0, crit: 0, all: 0 };
+        this.semaphoreLastChange = data.lastChange ? new Date(data.lastChange) : undefined;
+      },
+      error: () => {
+        this.semaphoreState = 'gray';
+      }
+    });
+  }
+
+  openIncidentPanel(type?: 'ok'|'warn'|'crit') {
+    console.log('Abrir Panel de Incidencias', { type, laneId: this.turnoActivo?.carrilId ?? this.selectedCarrilId });
+  }
+
+  openHealthSummary() {
+    console.log('Abrir Resumen de salud de periféricos');
+  }
+
+  ackIncidents(seconds: number) {
+    this.snack.open(`Alertas silenciadas por ${Math.round(seconds/60)} min`, 'OK', { duration: 2500 });
   }
 
   // Simulate PLC loop trigger and OCR/LPR
