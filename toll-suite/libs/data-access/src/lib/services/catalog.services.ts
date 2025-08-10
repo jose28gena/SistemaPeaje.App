@@ -1,5 +1,5 @@
 import { Injectable, Inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { BaseApiService, API_BASE_URL } from './base-api.service';
 import { 
@@ -80,9 +80,53 @@ export class TarifasService extends BaseApiService<Tarifa> {
     return this.http.get<Tarifa[]>(`${this.baseUrl}/${this.endpoint}/by-estacion/${estacionId}`);
   }
 
-  getVigentes(): Observable<Tarifa[]> {
-    return this.http.get<Tarifa[]>(`${this.baseUrl}/${this.endpoint}/vigentes`);
+  getVigentes(estacionId?: number, tipoVehiculoId?: number): Observable<Tarifa[]> {
+    let params = new HttpParams();
+    if (estacionId) params = params.set('estacionId', estacionId.toString());
+    if (tipoVehiculoId) params = params.set('tipoVehiculoId', tipoVehiculoId.toString());
+    
+    return this.http.get<Tarifa[]>(`${this.baseUrl}/${this.endpoint}/vigentes`, { params });
   }
+
+  getTarifaVigente(tipoVehiculoId: number, estacionId?: number): Observable<Tarifa> {
+    let params = new HttpParams().set('tipoVehiculoId', tipoVehiculoId.toString());
+    if (estacionId) params = params.set('estacionId', estacionId.toString());
+    
+    return this.http.get<Tarifa>(`${this.baseUrl}/${this.endpoint}/vigente`, { params });
+  }
+
+  calcularTarifa(request: CalculoTarifaRequest): Observable<CalculoTarifaResponse> {
+    return this.http.post<CalculoTarifaResponse>(`${this.baseUrl}/${this.endpoint}/calcular`, request);
+  }
+}
+
+// DTOs para el cálculo de tarifas (agregados desde el controlador)
+export interface CalculoTarifaRequest {
+  tipoVehiculoId: number;
+  estacionId?: number;
+  esResidente?: boolean;
+  esPrepago?: boolean;
+  esHorarioPico?: boolean;
+  descuentoFrecuencia?: number;
+  aplicaIVA?: boolean;
+  aplicaTasaAdministrativa?: boolean;
+  otrosRecargos?: number;
+}
+
+export interface CalculoTarifaResponse {
+  tarifaBaseId: number;
+  montoBase: number;
+  montoTotal: number;
+  tipoVehiculoId: number;
+  estacionId?: number;
+  fechaCalculo: Date;
+  conceptos: ConceptoTarifa[];
+}
+
+export interface ConceptoTarifa {
+  nombre: string;
+  monto: number;
+  tipoConcepto: string; // Base, Descuento, Recargo, Impuesto, Tasa
 }
 
 @Injectable({

@@ -29,14 +29,24 @@ import {
   Empleado,
   ComandosPlcService,
   ComandoAbrirBarreraDto,
-  LaneSemaphoreService
+  LaneSemaphoreService,
+  TarifasService,
+  TiposVehiculoService,
+  Tarifa,
+  TipoVehiculo,
+  CalculoTarifaRequest,
+  CalculoTarifaResponse
 } from '@toll-suite/data-access';
 
 interface VehicleClass {
   id: number;
   name: string;
+  descripcion?: string;
+  categoria?: string;
+  numeroEjes?: number;
   rate: number;
   tax: number;
+  tarifaId?: number; // ID de la tarifa vigente
 }
 
 interface PaymentMethod {
@@ -200,7 +210,15 @@ interface SystemStatus {
         <div class="kiosk-operations">
           <!-- Kiosk-style Operator Panel -->
           <div class="kiosk-wrapper">
-            <h2 class="kiosk-title">Panel del Operador</h2>
+            <h2 class="kiosk-title">
+              Panel del Operador
+              <span *ngIf="isLoadingTarifas" class="loading-indicator">
+                <mat-icon>sync</mat-icon> Cargando tarifas...
+              </span>
+              <span *ngIf="!isLoadingTarifas && vehicleClasses.length > 0" class="tarifa-status">
+                <mat-icon>check_circle</mat-icon> {{ vehicleClasses.length }} tarifas cargadas
+              </span>
+            </h2>
             <div class="kiosk-frame">
               <div class="kiosk-inner">
                 <!-- Left block: categories and options -->
@@ -240,7 +258,7 @@ interface SystemStatus {
                         <div class="ticket-info">Fideicomiso Puente Colorado</div>
                         <div class="ticket-info">Km. 2.5 Carretera San Luis RC - Mexicali</div>
                         <div class="ticket-info">FOLIO: {{ generateFolio() }} FECHA: {{ currentTime | date:'dd/MM/yyyy HH:mm' }}</div>
-                        <div class="ticket-info">CARRIL: {{ (turnoActivo?.carrilId ?? selectedCarrilId) || '--' | number:'2.0' }}        CAJERO: {{ selectedEmpleadoId || '--' }}</div>
+                        <div class="ticket-info">CARRIL: {{ getCarrilDisplay() }}        CAJERO: {{ selectedEmpleadoId || '--' }}</div>
                         <div class="ticket-separator">==========================</div>
                         <div class="ticket-info">NF:{{ generateNF() }}</div>
                       </div>
@@ -385,17 +403,12 @@ export class OperatorInterfaceComponent implements OnInit {
   // Vehicle data  
   axlesCount = 2;
   
-  // Vehicle classes
-  vehicleClasses: VehicleClass[] = [
-    { id: 1, name: 'Auto', rate: 25.00, tax: 4.00 },
-    { id: 2, name: 'Motocicleta', rate: 15.00, tax: 2.40 },
-    { id: 3, name: 'Camión 2 ejes', rate: 45.00, tax: 7.20 },
-    { id: 4, name: 'Camión 3 ejes', rate: 65.00, tax: 10.40 },
-    { id: 5, name: 'Tráiler', rate: 85.00, tax: 13.60 },
-    { id: 6, name: 'Autobús', rate: 55.00, tax: 8.80 }
-  ];
+  // Vehicle classes (dynamic loading from database)
+  vehicleClasses: VehicleClass[] = [];
+  tiposVehiculo: TipoVehiculo[] = [];
+  isLoadingTarifas = false;
   
-  suggestedClass = this.vehicleClasses[0];
+  suggestedClass: VehicleClass | null = null;
   selectedClass: VehicleClass | null = null;
   
   // Payment data
@@ -428,6 +441,8 @@ export class OperatorInterfaceComponent implements OnInit {
     private empleadosService: EmpleadosService,
     private comandosPlcService: ComandosPlcService,
     private laneSemaphoreService: LaneSemaphoreService,
+    private tarifasService: TarifasService,
+    private tiposVehiculoService: TiposVehiculoService,
     private dialog: MatDialog,
     private snack: MatSnackBar
   ) {}
@@ -438,12 +453,10 @@ export class OperatorInterfaceComponent implements OnInit {
       this.currentTime = new Date();
     }, 1000);
     
-    // Select suggested class by default
-    this.selectedClass = this.suggestedClass;
-
     // Load catalog data for opening a turno
     this.loadEstaciones();
     this.loadEmpleados();
+    this.loadTiposVehiculoYTarifas();
 
   // Try to load active turno from localStorage (if opened previously)
     try {
@@ -711,6 +724,91 @@ export class OperatorInterfaceComponent implements OnInit {
     });
   }
 
+  loadTiposVehiculoYTarifas() {
+    this.isLoadingTarifas = true;
+    
+    // Primero cargar tipos de vehículo
+    this.tiposVehiculoService.getAll().subscribe({
+      next: (res: any) => {
+        this.tiposVehiculo = res.data || res;
+        this.loadTarifasParaTipos();
+      },
+      error: (err: any) => {
+        console.error('Error cargando tipos de vehículo', err);
+        this.isLoadingTarifas = false;
+      }
+    });
+  }
+
+  loadTarifasParaTipos() {
+    const estacionId = this.turnoActivo?.estacionId || this.selectedEstacionId || undefined;
+    
+    // Cargar todas las tarifas vigentes
+    this.tarifasService.getVigentes(estacionId).subscribe({
+      next: (tarifas) => {
+        this.vehicleClasses = this.tiposVehiculo.map(tipo => {
+          // Buscar la tarifa correspondiente a este tipo de vehículo
+          const tarifa = tarifas.find(t => t.tipoVehiculoId === tipo.id);
+          
+          return {
+            id: tipo.id,
+            name: tipo.nombre,
+            descripcion: tipo.descripcion,
+            categoria: tipo.categoria,
+            numeroEjes: tipo.numeroEjes,
+            rate: tarifa ? tarifa.monto : tipo.tarifaBase || 0,
+            tax: tarifa ? this.calcularIVA(tarifa.monto) : this.calcularIVA(tipo.tarifaBase || 0),
+            tarifaId: tarifa?.id
+          };
+        });
+
+        // Seleccionar la primera clase como sugerida
+        if (this.vehicleClasses.length > 0) {
+          this.suggestedClass = this.vehicleClasses[0];
+          this.selectedClass = this.suggestedClass;
+        }
+
+        this.isLoadingTarifas = false;
+        console.log('Tarifas cargadas:', this.vehicleClasses);
+      },
+      error: (err) => {
+        console.error('Error cargando tarifas', err);
+        this.isLoadingTarifas = false;
+        // Fallback: usar tarifas base de tipos de vehículo
+        this.useBaseTarifas();
+      }
+    });
+  }
+
+  private useBaseTarifas() {
+    this.vehicleClasses = this.tiposVehiculo.map(tipo => ({
+      id: tipo.id,
+      name: tipo.nombre,
+      descripcion: tipo.descripcion,
+      categoria: tipo.categoria,
+      numeroEjes: tipo.numeroEjes,
+      rate: tipo.tarifaBase || 0,
+      tax: this.calcularIVA(tipo.tarifaBase || 0)
+    }));
+
+    if (this.vehicleClasses.length > 0) {
+      this.suggestedClass = this.vehicleClasses[0];
+      this.selectedClass = this.suggestedClass;
+    }
+  }
+
+  private calcularIVA(monto: number): number {
+    // Calcular IVA del 16% (puedes ajustar según tu lógica de negocio)
+    return monto * 0.16;
+  }
+
+  // Método para refrescar tarifas cuando cambie la estación
+  refreshTarifasForEstacion(estacionId?: number) {
+    if (this.tiposVehiculo.length > 0) {
+      this.loadTarifasParaTipos();
+    }
+  }
+
   puedeAbrirTurno(): boolean {
     return !!(this.selectedEstacionId && this.selectedEmpleadoId && this.montoInicialApertura != null && this.montoInicialApertura >= 0);
   }
@@ -727,6 +825,10 @@ export class OperatorInterfaceComponent implements OnInit {
       next: (turno) => {
         this.turnoActivo = turno;
         try { localStorage.setItem('turnoActivo', JSON.stringify(turno)); } catch {}
+        
+        // Refrescar tarifas para la estación del turno
+        this.refreshTarifasForEstacion(turno.estacionId);
+        
         // Reset apertura form
         this.montoInicialApertura = null;
       },
@@ -956,6 +1058,11 @@ export class OperatorInterfaceComponent implements OnInit {
       case 'exempt': return 'check_circle';
       default: return 'payment';
     }
+  }
+
+  getCarrilDisplay(): string {
+    const carrilId = this.turnoActivo?.carrilId ?? this.selectedCarrilId;
+    return carrilId ? carrilId.toString().padStart(2, '0') : '--';
   }
 
   generateFolio(): string {

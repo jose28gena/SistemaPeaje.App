@@ -28,7 +28,7 @@ export class TarifasComponent implements OnInit {
   searchTerm = '';
   selectedTipoVehiculo = '';
   selectedEstacion = '';
-  vigenciaFilter = 'todas';
+  vigenciaFilter: string = 'vigentes';
   
   // Pagination
   currentPage = 1;
@@ -50,12 +50,31 @@ export class TarifasComponent implements OnInit {
     console.log('TarifasComponent initialized');
     this.loading = true;
     
-    // Cargar tipos de vehículo y estaciones
-    this.loadTiposVehiculo();
-    this.loadEstaciones();
-    
-    // Cargar tarifas
-    this.loadTarifas();
+    // Cargar tipos de vehículo y estaciones primero, luego las tarifas
+    this.loadCatalogData();
+  }
+
+  private loadCatalogData() {
+    let tiposLoaded = false;
+    let estacionesLoaded = false;
+
+    const checkAndLoadTarifas = () => {
+      if (tiposLoaded && estacionesLoaded) {
+        this.loadTarifas();
+      }
+    };
+
+    // Cargar tipos de vehículo
+    this.loadTiposVehiculo(() => {
+      tiposLoaded = true;
+      checkAndLoadTarifas();
+    });
+
+    // Cargar estaciones
+    this.loadEstaciones(() => {
+      estacionesLoaded = true;
+      checkAndLoadTarifas();
+    });
   }
 
   loadTarifas() {
@@ -74,8 +93,10 @@ export class TarifasComponent implements OnInit {
         }
         
         console.log('Loading API data:', apiTarifas.length, 'records');
-        this.tarifas = apiTarifas;
-        this.totalTarifas = apiTarifas.length;
+        
+        // Relacionar tipos de vehículo y estaciones
+        this.tarifas = this.enrichTarifasWithRelations(apiTarifas);
+        this.totalTarifas = this.tarifas.length;
         this.filterAndPaginateTarifas();
         this.loading = false;
       },
@@ -89,7 +110,7 @@ export class TarifasComponent implements OnInit {
     });
   }
 
-  loadTiposVehiculo() {
+  loadTiposVehiculo(callback?: () => void) {
     console.log('Loading tipos de vehículo...');
     this.tiposVehiculoService.getAll().subscribe({
       next: (response: PaginatedResponse<TipoVehiculo> | TipoVehiculo[]) => {
@@ -104,15 +125,17 @@ export class TarifasComponent implements OnInit {
         }
         
         console.log('Tipos vehículo loaded successfully. Count:', this.tiposVehiculo.length);
+        if (callback) callback();
       },
       error: (error: any) => {
         console.error('Error loading tipos vehículo:', error);
         this.tiposVehiculo = this.getMockTiposVehiculo();
+        if (callback) callback();
       }
     });
   }
 
-  loadEstaciones() {
+  loadEstaciones(callback?: () => void) {
     console.log('Loading estaciones...');
     this.estacionesService.getAll().subscribe({
       next: (response: PaginatedResponse<Estacion> | Estacion[]) => {
@@ -127,10 +150,12 @@ export class TarifasComponent implements OnInit {
         }
         
         console.log('Estaciones loaded successfully. Count:', this.estaciones.length);
+        if (callback) callback();
       },
       error: (error: any) => {
         console.error('Error loading estaciones:', error);
         this.estaciones = this.getMockEstaciones();
+        if (callback) callback();
       }
     });
   }
@@ -231,6 +256,22 @@ export class TarifasComponent implements OnInit {
       {id: 2, nombre: 'Estación Sur', ubicacion: 'Sur de la ciudad', descripcion: 'Estación principal de entrada sur', activo: true, fechaCreacion: new Date()},
       {id: 3, nombre: 'Estación Este', ubicacion: 'Este de la ciudad', descripcion: 'Estación secundaria este', activo: true, fechaCreacion: new Date()}
     ];
+  }
+
+  private enrichTarifasWithRelations(tarifas: Tarifa[]): Tarifa[] {
+    return tarifas.map(tarifa => {
+      // Relacionar tipo de vehículo
+      if (tarifa.tipoVehiculoId && !tarifa.tipoVehiculo) {
+        tarifa.tipoVehiculo = this.tiposVehiculo.find(t => t.id === tarifa.tipoVehiculoId);
+      }
+      
+      // Relacionar estación
+      if (tarifa.estacionId && !tarifa.estacion) {
+        tarifa.estacion = this.estaciones.find(e => e.id === tarifa.estacionId);
+      }
+      
+      return tarifa;
+    });
   }
 
   filterAndPaginateTarifas() {
@@ -372,7 +413,7 @@ export class TarifasComponent implements OnInit {
     this.searchTerm = '';
     this.selectedTipoVehiculo = '';
     this.selectedEstacion = '';
-    this.vigenciaFilter = 'todas';
+    this.vigenciaFilter = 'vigentes';
     this.currentPage = 1;
     this.loading = true;
     
@@ -380,44 +421,28 @@ export class TarifasComponent implements OnInit {
     this.tarifas = [];
     this.pagedTarifas = [];
     
-    // Reload data from API
-    this.loadTiposVehiculo();
-    this.loadEstaciones();
-    this.loadTarifas();
+    // Reload data from API with proper sequencing
+    this.loadCatalogData();
   }
 
   onSaveTarifa(tarifaData: Partial<Tarifa>) {
     this.isSubmittingForm = true;
     
-    if (tarifaData.id) {
-      // Edit existing tarifa
-      this.tarifasService.update(tarifaData.id, tarifaData).subscribe({
-        next: () => {
-          this.loadTarifas();
-          this.onCancelForm();
-          this.isSubmittingForm = false;
-        },
-        error: (error: any) => {
-          console.error('Error updating tarifa:', error);
-          alert('No se pudo actualizar la tarifa. Verifique la conexión con el servidor.');
-          this.isSubmittingForm = false;
-        }
-      });
-    } else {
-      // Add new tarifa
-      this.tarifasService.create(tarifaData).subscribe({
-        next: () => {
-          this.loadTarifas();
-          this.onCancelForm();
-          this.isSubmittingForm = false;
-        },
-        error: (error: any) => {
-          console.error('Error creating tarifa:', error);
-          alert('No se pudo crear la tarifa. Verifique la conexión con el servidor.');
-          this.isSubmittingForm = false;
-        }
-      });
-    }
+    // La API no soporta PUT/DELETE para Tarifas. "Editar" debe crear una nueva vigencia (POST)
+  const { id, fechaCreacion, fechaActualizacion, activo, esVigente, ...createPayload } = tarifaData as any;
+
+    this.tarifasService.create(createPayload).subscribe({
+      next: () => {
+        this.loadTarifas();
+        this.onCancelForm();
+        this.isSubmittingForm = false;
+      },
+      error: (error: any) => {
+        console.error('Error creating tarifa:', error);
+        alert('No se pudo guardar la tarifa. Verifique la conexión con el servidor.');
+        this.isSubmittingForm = false;
+      }
+    });
   }
 
   onCancelForm() {

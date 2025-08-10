@@ -8,7 +8,11 @@ import { Estacion, Tarifa, TipoVehiculo } from '@toll-suite/data-access';
     <div class="modal-overlay" *ngIf="isOpen" (click)="onCancel()">
       <div class="modal-content form-modal" (click)="$event.stopPropagation()">
         <div class="modal-header">
-          <h3>{{ editMode ? 'Editar' : 'Crear' }} Tarifa</h3>
+          <h3>{{ editMode ? 'Nueva vigencia de tarifa' : 'Crear Tarifa' }}</h3>
+          <p *ngIf="editMode" class="text-info">
+            <i class="fas fa-info-circle"></i>
+            Se creará una nueva vigencia. La tarifa anterior se desactivará automáticamente.
+          </p>
           <button class="btn-close" (click)="onCancel()" [disabled]="isSubmitting">
             <i class="fas fa-times"></i>
           </button>
@@ -139,7 +143,7 @@ import { Estacion, Tarifa, TipoVehiculo } from '@toll-suite/data-access';
               [disabled]="tarifaForm.invalid || isSubmitting"
             >
               <i class="fas fa-spinner fa-spin" *ngIf="isSubmitting"></i>
-              {{ editMode ? 'Actualizar' : 'Guardar' }}
+              {{ editMode ? 'Crear nueva vigencia' : 'Guardar' }}
             </button>
           </div>
         </form>
@@ -366,6 +370,20 @@ import { Estacion, Tarifa, TipoVehiculo } from '@toll-suite/data-access';
     
     .btn-secondary:hover:not(:disabled) {
       background: #5a6268;
+    }
+    
+    .text-info {
+      background: #e3f2fd;
+      border: 1px solid #2196f3;
+      border-radius: 4px;
+      padding: 0.75rem;
+      margin: 0;
+      font-size: 0.9rem;
+      color: #1976d2;
+    }
+    
+    .text-info i {
+      margin-right: 0.5rem;
     }
     
     @media (max-width: 768px) {
