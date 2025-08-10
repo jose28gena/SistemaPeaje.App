@@ -463,6 +463,11 @@ export class OperatorInterfaceComponent implements OnInit {
       const saved = localStorage.getItem('turnoActivo');
       if (saved) {
         this.turnoActivo = JSON.parse(saved);
+        // Si hay un turno activo, cargar los carriles de esa estación
+        if (this.turnoActivo?.estacionId) {
+          this.selectedEstacionId = this.turnoActivo.estacionId;
+          this.onEstacionChange();
+        }
       }
     } catch {}
 
@@ -701,18 +706,43 @@ export class OperatorInterfaceComponent implements OnInit {
 
   // Turno helpers
   loadEstaciones() {
+    console.log('🔄 Cargando estaciones...');
     this.estacionesService.getAll().subscribe({
-      next: (res) => this.estaciones = (res as any).data || res,
-      error: (err) => console.error('Error cargando estaciones', err)
+      next: (res) => {
+        console.log('✅ Respuesta exitosa de estaciones:', res);
+        this.estaciones = (res as any).data || res;
+        console.log('🎯 Estaciones asignadas:', this.estaciones);
+      },
+      error: (err) => console.error('❌ Error cargando estaciones:', err)
     });
   }
 
   onEstacionChange() {
+    console.log('🔄 onEstacionChange llamado - selectedEstacionId:', this.selectedEstacionId);
     this.carriles = [];
     if (this.selectedEstacionId != null) {
+      console.log('📡 Llamando getCarrilesByEstacion para estación:', this.selectedEstacionId);
       this.estacionesService.getCarrilesByEstacion(this.selectedEstacionId).subscribe({
-        next: (res) => this.carriles = (res as any).data || res,
-        error: (err) => console.error('Error cargando carriles', err)
+        next: (res) => {
+          console.log('✅ Respuesta exitosa de carriles:', res);
+          console.log('🔍 Tipo de respuesta:', typeof res);
+          console.log('🔍 Es array?:', Array.isArray(res));
+          
+          // Asegurarse de que la respuesta sea un array
+          if (Array.isArray(res)) {
+            this.carriles = res;
+          } else if (res && (res as any).data && Array.isArray((res as any).data)) {
+            this.carriles = (res as any).data;
+          } else {
+            this.carriles = res ? [res] : [];
+          }
+          
+          console.log('🎯 Carriles asignados:', this.carriles);
+          console.log('📊 Cantidad de carriles:', this.carriles.length);
+        },
+        error: (err) => {
+          console.error('❌ Error cargando carriles:', err);
+        }
       });
     }
   }
