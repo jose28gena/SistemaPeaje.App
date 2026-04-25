@@ -11,6 +11,10 @@ export const routes: Routes = [
     loadChildren: () => import('./features/admin/admin.module').then(m => m.AdminModule)
   },
   {
+    path: 'clientes',
+    loadChildren: () => import('./features/clientes/clientes.module').then(m => m.ClientesModule)
+  },
+  {
     path: 'reports',
     loadChildren: () => import('./features/reports/reports.module').then(m => m.ReportsModule)
   },
